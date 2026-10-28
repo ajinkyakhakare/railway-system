@@ -1,0 +1,1677 @@
+{
+  "info": {
+    "_postman_id": "c5376b5e-1efe-40a7-bec9-df8d4e5ced02",
+    "name": "Railway System - G3 Reservation & Seat",
+    "description": "Postman collection for Group 3 (Reservation & Seat Management). Run it with the Collection Runner in the folder order shown: 'Auth setup' first, then 'Trip search'. Needs the backend on http://localhost:8080 and the demo seed data (runs for the next 14 days).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth setup",
+      "description": "Run these three requests first. They fill adminToken, passengerToken and operatorToken.",
+      "item": [
+        {
+          "name": "Login as admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "pm.test(\"data.token is a non-empty string\", function () {",
+                  "    const token = pm.response.json().data.token;",
+                  "    pm.expect(token).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "// Store the JWT so later requests can use it as a Bearer token.",
+                  "const body = pm.response.json();",
+                  "if (body.success && body.data && body.data.token) {",
+                  "    pm.collectionVariables.set(\"adminToken\", body.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in as admin@railway.test (seed user, password Test@1234) and stores data.token in the collection variable adminToken. Requires app.auth.require-login-otp=false (the default).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login as passenger (asha)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "pm.test(\"data.token is a non-empty string\", function () {",
+                  "    const token = pm.response.json().data.token;",
+                  "    pm.expect(token).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "// Store the JWT so later requests can use it as a Bearer token.",
+                  "const body = pm.response.json();",
+                  "if (body.success && body.data && body.data.token) {",
+                  "    pm.collectionVariables.set(\"passengerToken\", body.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in as asha@railway.test (seed user, password Test@1234) and stores data.token in the collection variable passengerToken. Requires app.auth.require-login-otp=false (the default).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"asha@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login as operator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "pm.test(\"data.token is a non-empty string\", function () {",
+                  "    const token = pm.response.json().data.token;",
+                  "    pm.expect(token).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "// Store the JWT so later requests can use it as a Bearer token.",
+                  "const body = pm.response.json();",
+                  "if (body.success && body.data && body.data.token) {",
+                  "    pm.collectionVariables.set(\"operatorToken\", body.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in as operator@railway.test (seed user, password Test@1234) and stores data.token in the collection variable operatorToken. Requires app.auth.require-login-otp=false (the default).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"operator@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trip search",
+      "description": "Finds the run used by all other folders.",
+      "item": [
+        {
+          "name": "Search trains CSMT to Pune (stores runId, classCode)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Use TOMORROW as journey date so the train has not departed yet (RUN_DEPARTED).",
+                  "const d = new Date();",
+                  "d.setDate(d.getDate() + 1);",
+                  "const iso = d.getFullYear() + \"-\" + String(d.getMonth() + 1).padStart(2, \"0\") + \"-\" + String(d.getDate()).padStart(2, \"0\");",
+                  "pm.collectionVariables.set(\"journeyDate\", iso);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "pm.test(\"at least one run found for the date\", function () {",
+                  "    pm.expect(pm.response.json().data).to.be.an(\"array\").that.is.not.empty;",
+                  "});",
+                  "// Prefer train 11001 (has SL); otherwise take the first result (train 12002 has only CC).",
+                  "const body = pm.response.json();",
+                  "if (body.success && body.data.length > 0) {",
+                  "    const pick = body.data.find(function (r) { return r.trainNo === \"11001\"; }) || body.data[0];",
+                  "    pm.collectionVariables.set(\"runId\", pick.runId);",
+                  "    pm.collectionVariables.set(\"classCode\", pick.trainNo === \"11001\" ? \"SL\" : \"CC\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/search?fromStationId={{fromStationId}}&toStationId={{toStationId}}&date={{journeyDate}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "fromStationId",
+                  "value": "{{fromStationId}}"
+                },
+                {
+                  "key": "toStationId",
+                  "value": "{{toStationId}}"
+                },
+                {
+                  "key": "date",
+                  "value": "{{journeyDate}}"
+                }
+              ]
+            },
+            "description": "G1 endpoint. Finds a run on tomorrow's date and stores runId and classCode so every G3 request below uses the same run."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Availability",
+      "description": "",
+      "item": [
+        {
+          "name": "Availability for the run (happy path)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "const row = body.success ? body.data.find(function (r) { return r.classCode === pm.collectionVariables.get(\"classCode\"); }) : null;",
+                  "pm.test(\"row for the chosen class exists with availabilityText\", function () {",
+                  "    pm.expect(row).to.be.an(\"object\");",
+                  "    pm.expect(row.availabilityText).to.be.a(\"string\");",
+                  "});",
+                  "// Remember the CNF count so the \"after booking\" request can compare.",
+                  "if (row) { pm.collectionVariables.set(\"availBefore\", row.availableCnf); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/availability?runId={{runId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "runId",
+                  "value": "{{runId}}"
+                }
+              ]
+            },
+            "description": "PUBLIC. Rows of v_seat_availability for the run (one row per class)."
+          }
+        },
+        {
+          "name": "Availability for a missing run (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"success is false and error.code is RUN_NOT_FOUND\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.equal(\"RUN_NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/availability?runId=999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "runId",
+                  "value": "999999"
+                }
+              ]
+            },
+            "description": "Run 999999 does not exist, so RUN_NOT_FOUND (404) is expected."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create booking",
+      "description": "",
+      "item": [
+        {
+          "name": "Book passengers 1 and 2 as asha (happy path)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of [200, 201]\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "const data = body.data;",
+                  "pm.test(\"PNR has 10 digits and does not start with 0\", function () {",
+                  "    pm.expect(data.pnr).to.match(/^[1-9][0-9]{9}$/);",
+                  "});",
+                  "pm.test(\"two passengers returned with status CNF, RAC or WL\", function () {",
+                  "    pm.expect(data.passengers).to.have.lengthOf(2);",
+                  "    data.passengers.forEach(function (p) { pm.expect(p.status).to.be.oneOf([\"CNF\", \"RAC\", \"WL\"]); });",
+                  "});",
+                  "pm.test(\"totalFare equals the sum of fareAmount\", function () {",
+                  "    const sum = data.passengers.reduce(function (s, p) { return s + p.fareAmount; }, 0);",
+                  "    pm.expect(Math.abs(sum - data.totalFare)).to.be.below(0.005);",
+                  "});",
+                  "// Store ids for the later folders.",
+                  "if (body.success) {",
+                  "    pm.collectionVariables.set(\"bookingId\", data.bookingId);",
+                  "    pm.collectionVariables.set(\"pnr\", data.pnr);",
+                  "    pm.collectionVariables.set(\"bookingPassengerId\", data.passengers[0].bookingPassengerId);",
+                  "    pm.collectionVariables.set(\"cnfCount\", data.passengers.filter(function (p) { return p.status === \"CNF\"; }).length);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "Asha (user 3) books herself (passenger 1) and Suresh (passenger 2). Calls sp_book_ticket. Stores bookingId, pnr, bookingPassengerId, cnfCount.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"runId\": {{runId}},\n  \"classCode\": \"{{classCode}}\",\n  \"fromStationId\": {{fromStationId}},\n  \"toStationId\": {{toStationId}},\n  \"passengerIds\": [1, 2]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Passenger belongs to another user (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"success is false and error.code is PASSENGER_NOT_OWNED\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.equal(\"PASSENGER_NOT_OWNED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "Passenger 4 (Rohan Deshmukh) belongs to user 4, not asha. sp_book_ticket rolls back and raises PASSENGER_NOT_OWNED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"runId\": {{runId}},\n  \"classCode\": \"{{classCode}}\",\n  \"fromStationId\": {{fromStationId}},\n  \"toStationId\": {{toStationId}},\n  \"passengerIds\": [4]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Seven passengers (validation negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"success is false and error.code is one of ['VALIDATION_ERROR', 'TOO_MANY_PASSENGERS']\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.be.oneOf([\"VALIDATION_ERROR\", \"TOO_MANY_PASSENGERS\"]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "Maximum is 6 passengers. The request validation or sp_book_ticket rejects 7 with VALIDATION_ERROR or TOO_MANY_PASSENGERS (HTTP 400).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"runId\": {{runId}},\n  \"classCode\": \"{{classCode}}\",\n  \"fromStationId\": {{fromStationId}},\n  \"toStationId\": {{toStationId}},\n  \"passengerIds\": [1, 2, 3, 4, 5, 6, 7]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Empty passenger list (validation negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"success is false and error.code is VALIDATION_ERROR\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.equal(\"VALIDATION_ERROR\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "At least one passenger is required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"runId\": {{runId}},\n  \"classCode\": \"{{classCode}}\",\n  \"fromStationId\": {{fromStationId}},\n  \"toStationId\": {{toStationId}},\n  \"passengerIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "From station after to station (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"success is false and error.code is INVALID_STATIONS\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.equal(\"INVALID_STATIONS\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "Pune to CSMT goes against the route direction, so INVALID_STATIONS.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"runId\": {{runId}},\n  \"classCode\": \"{{classCode}}\",\n  \"fromStationId\": {{toStationId}},\n  \"toStationId\": {{fromStationId}},\n  \"passengerIds\": [1, 2]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Booking for a missing run (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"success is false and error.code is RUN_NOT_FOUND\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.equal(\"RUN_NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "Run 999999 does not exist.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"runId\": 999999,\n  \"classCode\": \"{{classCode}}\",\n  \"fromStationId\": {{fromStationId}},\n  \"toStationId\": {{toStationId}},\n  \"passengerIds\": [1, 2]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Booking without a token (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"success is false and error.code is UNAUTHORIZED\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.equal(\"UNAUTHORIZED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "POST /bookings needs a logged-in user.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"runId\": {{runId}},\n  \"classCode\": \"{{classCode}}\",\n  \"fromStationId\": {{fromStationId}},\n  \"toStationId\": {{toStationId}},\n  \"passengerIds\": [1, 2]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Availability after booking",
+      "description": "",
+      "item": [
+        {
+          "name": "Availability reflects the new booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "const row = body.success ? body.data.find(function (r) { return r.classCode === pm.collectionVariables.get(\"classCode\"); }) : null;",
+                  "pm.test(\"Available_CNF dropped by the number of CNF passengers (trigger trg_dec_inventory)\", function () {",
+                  "    const expected = Number(pm.collectionVariables.get(\"availBefore\")) - Number(pm.collectionVariables.get(\"cnfCount\"));",
+                  "    pm.expect(row.availableCnf).to.equal(expected);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/availability?runId={{runId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "runId",
+                  "value": "{{runId}}"
+                }
+              ]
+            },
+            "description": "Shows that the counters are updated by the trigger, not by the procedure. Run the whole collection in order (single user) for the numbers to match."
+          }
+        }
+      ]
+    },
+    {
+      "name": "My bookings",
+      "description": "",
+      "item": [
+        {
+          "name": "List my bookings (happy path)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "pm.test(\"list contains the new PNR\", function () {",
+                  "    const pnrs = pm.response.json().data.map(function (b) { return b.pnr; });",
+                  "    pm.expect(pnrs).to.include(pm.collectionVariables.get(\"pnr\"));",
+                  "});",
+                  "pm.test(\"rows have the documented fields\", function () {",
+                  "    const b = pm.response.json().data[0];",
+                  "    [\"bookingId\", \"pnr\", \"trainNo\", \"trainName\", \"journeyDate\", \"fromStationCode\", \"toStationCode\", \"classCode\", \"bookingStatus\", \"totalFare\", \"bookedAt\"]",
+                  "        .forEach(function (k) { pm.expect(b).to.have.property(k); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "my"
+              ]
+            },
+            "description": "Bookings of the logged-in user, newest first."
+          }
+        },
+        {
+          "name": "List my bookings without a token (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"success is false and error.code is UNAUTHORIZED\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.equal(\"UNAUTHORIZED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "my"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking details",
+      "description": "",
+      "item": [
+        {
+          "name": "Owner reads the booking (happy path)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "pm.test(\"details match the created booking\", function () {",
+                  "    const d = pm.response.json().data;",
+                  "    pm.expect(d.bookingId).to.equal(Number(pm.collectionVariables.get(\"bookingId\")));",
+                  "    pm.expect(d.pnr).to.equal(pm.collectionVariables.get(\"pnr\"));",
+                  "    pm.expect(d.runId).to.equal(Number(pm.collectionVariables.get(\"runId\")));",
+                  "    pm.expect(d).to.have.property(\"fromStationId\");",
+                  "    pm.expect(d).to.have.property(\"toStationId\");",
+                  "    pm.expect(d.passengers).to.have.lengthOf(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "{{bookingId}}"
+              ]
+            },
+            "description": "Owner sees runId, station ids and passengers with seat details."
+          }
+        },
+        {
+          "name": "Admin reads the same booking (happy path)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "pm.test(\"details match the created booking\", function () {",
+                  "    const d = pm.response.json().data;",
+                  "    pm.expect(d.bookingId).to.equal(Number(pm.collectionVariables.get(\"bookingId\")));",
+                  "    pm.expect(d.pnr).to.equal(pm.collectionVariables.get(\"pnr\"));",
+                  "    pm.expect(d.runId).to.equal(Number(pm.collectionVariables.get(\"runId\")));",
+                  "    pm.expect(d).to.have.property(\"fromStationId\");",
+                  "    pm.expect(d).to.have.property(\"toStationId\");",
+                  "    pm.expect(d.passengers).to.have.lengthOf(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "{{bookingId}}"
+              ]
+            },
+            "description": "ADMIN may read any booking."
+          }
+        },
+        {
+          "name": "Operator reads someone else's booking (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"success is false and error.code is one of ['FORBIDDEN', 'NOT_OWNER']\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.be.oneOf([\"FORBIDDEN\", \"NOT_OWNER\"]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "{{bookingId}}"
+              ]
+            },
+            "description": "Only the owner or an ADMIN may read it."
+          }
+        },
+        {
+          "name": "Unknown booking id (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"success is false and error.code is one of ['BOOKING_NOT_FOUND', 'NOT_FOUND']\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.be.oneOf([\"BOOKING_NOT_FOUND\", \"NOT_FOUND\"]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "999999999"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ticket lookup",
+      "description": "",
+      "item": [
+        {
+          "name": "Look up ticket by PNR (happy path)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "pm.test(\"ticket matches the PNR and hides passenger names\", function () {",
+                  "    const d = pm.response.json().data;",
+                  "    pm.expect(d.pnr).to.equal(pm.collectionVariables.get(\"pnr\"));",
+                  "    pm.expect(d.passengers).to.have.lengthOf(2);",
+                  "    d.passengers.forEach(function (p) {",
+                  "        pm.expect(p).to.have.property(\"index\");",
+                  "        pm.expect(p).to.have.property(\"status\");",
+                  "        pm.expect(p).to.not.have.property(\"passengerName\");",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/{{pnr}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "{{pnr}}"
+              ]
+            },
+            "description": "PUBLIC. No token needed and no passenger names in the answer."
+          }
+        },
+        {
+          "name": "Unknown PNR (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"success is false and error.code is NOT_FOUND\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.equal(\"NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/0000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "0000000000"
+              ]
+            },
+            "description": "PNRs never start with 0, so this PNR cannot exist."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seat map",
+      "description": "",
+      "item": [
+        {
+          "name": "Seat map for run and class (happy path)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "pm.test(\"rows have seat fields and our CNF seats are occupied\", function () {",
+                  "    const rows = pm.response.json().data;",
+                  "    pm.expect(rows).to.be.an(\"array\").that.is.not.empty;",
+                  "    [\"seatId\", \"coachNumber\", \"seatNo\", \"berthType\", \"occupied\"]",
+                  "        .forEach(function (k) { pm.expect(rows[0]).to.have.property(k); });",
+                  "    const occupied = rows.filter(function (r) { return r.occupied === true; }).length;",
+                  "    pm.expect(occupied).to.be.at.least(Number(pm.collectionVariables.get(\"cnfCount\")));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/runs/{{runId}}/seat-map?classCode={{classCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "runs",
+                "{{runId}}",
+                "seat-map"
+              ],
+              "query": [
+                {
+                  "key": "classCode",
+                  "value": "{{classCode}}"
+                }
+              ]
+            },
+            "description": "PUBLIC. Every seat of the class with an occupied flag."
+          }
+        },
+        {
+          "name": "Seat map for a missing run (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"success is false and error.code is RUN_NOT_FOUND\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.equal(\"RUN_NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/runs/999999/seat-map?classCode=SL",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "runs",
+                "999999",
+                "seat-map"
+              ],
+              "query": [
+                {
+                  "key": "classCode",
+                  "value": "SL"
+                }
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin occupancy",
+      "description": "",
+      "item": [
+        {
+          "name": "Occupancy for the journey date (happy path)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "pm.test(\"our run and class appear with ranking fields\", function () {",
+                  "    const rows = pm.response.json().data;",
+                  "    const mine = rows.find(function (r) {",
+                  "        return r.runId === Number(pm.collectionVariables.get(\"runId\")) && r.classCode === pm.collectionVariables.get(\"classCode\");",
+                  "    });",
+                  "    pm.expect(mine).to.be.an(\"object\");",
+                  "    pm.expect(mine).to.have.property(\"occupancyPct\");",
+                  "    pm.expect(mine).to.have.property(\"occupancyRank\");",
+                  "    pm.expect(mine.bookedSeats).to.be.at.least(Number(pm.collectionVariables.get(\"cnfCount\")));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/occupancy?date={{journeyDate}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "occupancy"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{journeyDate}}"
+                }
+              ]
+            },
+            "description": "ADMIN. Rows of v_run_occupancy with RANK() per Journey_Date."
+          }
+        },
+        {
+          "name": "Occupancy as passenger (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"success is false and error.code is FORBIDDEN\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.equal(\"FORBIDDEN\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/occupancy?date={{journeyDate}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "occupancy"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{journeyDate}}"
+                }
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Expire unpaid bookings",
+      "description": "",
+      "item": [
+        {
+          "name": "Expire bookings unpaid for 30 minutes (happy path)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of [200, 201]\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(pm.response.json().success).to.eql(true);",
+                  "});",
+                  "pm.test(\"expiredCount is a number\", function () {",
+                  "    pm.expect(pm.response.json().data.expiredCount).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/bookings/expire-unpaid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "bookings",
+                "expire-unpaid"
+              ]
+            },
+            "description": "ADMIN. Our booking is only seconds old, so it is not expired.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"minutes\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Expire as passenger (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"success is false and error.code is FORBIDDEN\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.error.code).to.equal(\"FORBIDDEN\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/bookings/expire-unpaid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "bookings",
+                "expire-unpaid"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"minutes\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "passengerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "operatorToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "classCode",
+      "value": "SL",
+      "type": "string"
+    },
+    {
+      "key": "fromStationId",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "toStationId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "journeyDate",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pnr",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingPassengerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cnfCount",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "availBefore",
+      "value": "0",
+      "type": "string"
+    }
+  ]
+}

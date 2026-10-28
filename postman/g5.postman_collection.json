@@ -1,0 +1,2307 @@
+{
+  "info": {
+    "_postman_id": "e9be50ff-1c76-52ac-8c6b-b202aa8cab8d",
+    "name": "Railway System - G5 Operations & Analytics",
+    "description": "Task G5.6. Covers every Group 5 endpoint of contract C9. Run the folder 'Auth setup' first: it stores adminToken, passengerToken and operatorToken. Start the backend on port 8080 with the seed data loaded (C6). Dates ({{today}}, {{weekAgo}}, {{monthAgo}}) are computed by the collection pre-request script. Run 1 is train 11001 on the first seeded day; 'Operator status update' restores it to SCHEDULED so the collection can be run again.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth setup",
+      "description": "Run these three first. Each test script stores the token in the matching collection variable.",
+      "item": [
+        {
+          "name": "Login as admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('token is returned', function () { pm.expect(json.data.token).to.be.a('string').and.not.empty; });",
+                  "pm.collectionVariables.set('adminToken', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in as admin@railway.test (seed password Test@1234) and stores the JWT in {{adminToken}}. Requires app.auth.require-login-otp=false (default).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login as passenger (Asha)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('token is returned', function () { pm.expect(json.data.token).to.be.a('string').and.not.empty; });",
+                  "pm.collectionVariables.set('passengerToken', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in as asha@railway.test (seed password Test@1234) and stores the JWT in {{passengerToken}}. Requires app.auth.require-login-otp=false (default).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"asha@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login as operator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('token is returned', function () { pm.expect(json.data.token).to.be.a('string').and.not.empty; });",
+                  "pm.collectionVariables.set('operatorToken', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in as operator@railway.test (seed password Test@1234) and stores the JWT in {{operatorToken}}. Requires app.auth.require-login-otp=false (default).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"operator@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public status board",
+      "description": "Feature: public train running-status board (GET /ops/status, GET /ops/status/{runId}).",
+      "item": [
+        {
+          "name": "Board for today (default date)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"runId\", \"trainNo\", \"trainName\", \"journeyDate\", \"status\", \"delayMinutes\", \"currentStationId\", \"currentStationName\", \"lastReason\", \"updatedAt\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status"
+              ]
+            },
+            "description": "GET /ops/status without ?date returns the live status of today's runs. No token needed."
+          }
+        },
+        {
+          "name": "Board for a given date",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"runId\", \"trainNo\", \"trainName\", \"journeyDate\", \"status\", \"delayMinutes\", \"currentStationId\", \"currentStationName\", \"lastReason\", \"updatedAt\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});",
+                  "pm.test('every row has a valid status', function () {",
+                  "  json.data.forEach(function (r) {",
+                  "    pm.expect(['SCHEDULED','ON_TIME','DELAYED','CANCELLED','ARRIVED']).to.include(r.status);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status?date={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "GET /ops/status?date=yyyy-MM-dd (date computed by the collection pre-request script)."
+          }
+        },
+        {
+          "name": "Status of one run (run 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "const row = json.data;",
+                  "pm.test('data is the row of run 1', function () { pm.expect(row.runId).to.eql(1); });",
+                  "pm.test('row has all view fields', function () {",
+                  "  [\"runId\", \"trainNo\", \"trainName\", \"journeyDate\", \"status\", \"delayMinutes\", \"currentStationId\", \"currentStationName\", \"lastReason\", \"updatedAt\"].forEach(function (k) { pm.expect(row).to.have.property(k); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "1"
+              ]
+            },
+            "description": "Run 1 = train 11001 on the first seeded day (C6)."
+          }
+        },
+        {
+          "name": "Status of unknown run (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 404', function () { pm.response.to.have.status(404); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is RUN_NOT_FOUND or NOT_FOUND', function () { pm.expect([\"RUN_NOT_FOUND\", \"NOT_FOUND\"]).to.include(json.error.code); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "999999"
+              ]
+            },
+            "description": "Negative: a run id that does not exist must give 404."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Operator status update",
+      "description": "Feature: operator updates a train run (PUT /ops/status/{runId}) and the two status triggers.",
+      "item": [
+        {
+          "name": "Operator marks run 1 DELAYED (25 min at Kalyan)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('response echoes the new state', function () {",
+                  "  pm.expect(json.data.runId).to.eql(1);",
+                  "  pm.expect(json.data.status).to.eql('DELAYED');",
+                  "  pm.expect(json.data.delayMinutes).to.eql(25);",
+                  "  pm.expect(json.data).to.have.property('updatedAt');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "1"
+              ]
+            },
+            "description": "PUT /ops/status/{runId} as OPERATOR. trg_delay_log writes a delay_log row because the delay changed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DELAYED\",\n  \"delayMinutes\": 25,\n  \"currentStationId\": 3,\n  \"reason\": \"Signal failure near Kalyan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Board shows the update (run 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('board row matches the update', function () {",
+                  "  pm.expect(json.data.status).to.eql('DELAYED');",
+                  "  pm.expect(json.data.delayMinutes).to.eql(25);",
+                  "  pm.expect(json.data.currentStationId).to.eql(3);",
+                  "  pm.expect(json.data.currentStationName).to.eql('Kalyan Junction');",
+                  "  pm.expect(json.data.lastReason).to.eql('Signal failure near Kalyan');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "1"
+              ]
+            },
+            "description": "Reads the public board to prove the operator update is visible (v_train_live_status)."
+          }
+        },
+        {
+          "name": "Trigger: ON_TIME with 20 min delay becomes DELAYED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('trg_status_flag corrected the status to DELAYED', function () {",
+                  "  pm.expect(json.data.status).to.eql('DELAYED');",
+                  "  pm.expect(json.data.delayMinutes).to.eql(20);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "1"
+              ]
+            },
+            "description": "Delay >= 15 with status SCHEDULED or ON_TIME is flagged DELAYED by trg_status_flag (BEFORE UPDATE).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ON_TIME\",\n  \"delayMinutes\": 20,\n  \"currentStationId\": 4,\n  \"reason\": \"Running late after Lonavala halt\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Trigger: DELAYED with 0 min becomes ON_TIME (no station)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('trg_status_flag corrected the status to ON_TIME', function () {",
+                  "  pm.expect(json.data.status).to.eql('ON_TIME');",
+                  "  pm.expect(json.data.delayMinutes).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "1"
+              ]
+            },
+            "description": "Delay 0 with status DELAYED becomes ON_TIME. currentStationId = null is allowed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DELAYED\",\n  \"delayMinutes\": 0,\n  \"currentStationId\": null,\n  \"reason\": \"Recovered time\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Admin may also update: reset run 1 to SCHEDULED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('run 1 is back to SCHEDULED with no delay', function () {",
+                  "  pm.expect(json.data.status).to.eql('SCHEDULED');",
+                  "  pm.expect(json.data.delayMinutes).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "1"
+              ]
+            },
+            "description": "The endpoint allows OPERATOR or ADMIN (hasAnyRole). This request also restores the seed state so the collection can be re-run.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SCHEDULED\",\n  \"delayMinutes\": 0,\n  \"currentStationId\": null,\n  \"reason\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Status update negative cases",
+      "description": "Feature: access control and validation for PUT /ops/status/{runId}.",
+      "item": [
+        {
+          "name": "Passenger token on PUT status (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "1"
+              ]
+            },
+            "description": "A PASSENGER must not change train status.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DELAYED\",\n  \"delayMinutes\": 10,\n  \"currentStationId\": 3,\n  \"reason\": \"Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "No token on PUT status (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is UNAUTHORIZED', function () { pm.expect(json.error.code).to.eql('UNAUTHORIZED'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "1"
+              ]
+            },
+            "description": "PUT is not public, so a missing token is rejected before the controller runs.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DELAYED\",\n  \"delayMinutes\": 10,\n  \"currentStationId\": 3,\n  \"reason\": \"Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Invalid status value (400 INVALID_STATUS)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is INVALID_STATUS', function () { pm.expect(json.error.code).to.eql('INVALID_STATUS'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "1"
+              ]
+            },
+            "description": "'FLYING' is not one of SCHEDULED, ON_TIME, DELAYED, CANCELLED, ARRIVED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"FLYING\",\n  \"delayMinutes\": 0,\n  \"currentStationId\": 3,\n  \"reason\": \"Invalid status test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Unknown run (404 RUN_NOT_FOUND)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 404', function () { pm.response.to.have.status(404); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is RUN_NOT_FOUND', function () { pm.expect(json.error.code).to.eql('RUN_NOT_FOUND'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "999999"
+              ]
+            },
+            "description": "sp_update_train_status raises RUN_NOT_FOUND for a run id that does not exist.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DELAYED\",\n  \"delayMinutes\": 10,\n  \"currentStationId\": 3,\n  \"reason\": \"Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Negative delay (400 VALIDATION_ERROR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is VALIDATION_ERROR', function () { pm.expect(json.error.code).to.eql('VALIDATION_ERROR'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ops/status/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ops",
+                "status",
+                "1"
+              ]
+            },
+            "description": "delayMinutes must be >= 0 (request DTO validation; the table also has CHECK(Delay_Minutes >= 0)).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DELAYED\",\n  \"delayMinutes\": -5,\n  \"currentStationId\": 3,\n  \"reason\": \"Negative delay test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Revenue report",
+      "description": "Feature: GET /admin/reports/revenue with date ranges.",
+      "item": [
+        {
+          "name": "Revenue, last 7 days",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"stationId\", \"stationCode\", \"stationName\", \"revenueDate\", \"totalRevenue\", \"ticketCount\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});",
+                  "pm.test('every row date is inside the requested range', function () {",
+                  "  const from = pm.request.url.query.get('from');",
+                  "  const to = pm.request.url.query.get('to');",
+                  "  json.data.forEach(function (r) {",
+                  "    pm.expect(r.revenueDate >= from && r.revenueDate <= to).to.eql(true);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/revenue?from={{weekAgo}}&to={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "revenue"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{weekAgo}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "View v_station_daily_revenue filtered by Revenue_Date between from and to."
+          }
+        },
+        {
+          "name": "Revenue, last 30 days",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"stationId\", \"stationCode\", \"stationName\", \"revenueDate\", \"totalRevenue\", \"ticketCount\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});",
+                  "pm.test('every row date is inside the requested range', function () {",
+                  "  const from = pm.request.url.query.get('from');",
+                  "  const to = pm.request.url.query.get('to');",
+                  "  json.data.forEach(function (r) {",
+                  "    pm.expect(r.revenueDate >= from && r.revenueDate <= to).to.eql(true);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/revenue?from={{monthAgo}}&to={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "revenue"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{monthAgo}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "A wider date range on the same endpoint."
+          }
+        },
+        {
+          "name": "Revenue, single day (today)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"stationId\", \"stationCode\", \"stationName\", \"revenueDate\", \"totalRevenue\", \"ticketCount\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});",
+                  "pm.test('every row date is inside the requested range', function () {",
+                  "  const from = pm.request.url.query.get('from');",
+                  "  const to = pm.request.url.query.get('to');",
+                  "  json.data.forEach(function (r) {",
+                  "    pm.expect(r.revenueDate >= from && r.revenueDate <= to).to.eql(true);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/revenue?from={{today}}&to={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "revenue"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{today}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "from = to selects exactly one day."
+          }
+        },
+        {
+          "name": "Passenger token on revenue report (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/revenue?from={{weekAgo}}&to={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "revenue"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{weekAgo}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "/admin/** needs role ADMIN."
+          }
+        },
+        {
+          "name": "Operator token on revenue report (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/revenue?from={{weekAgo}}&to={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "revenue"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{weekAgo}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "Reports are ADMIN only; OPERATOR is limited to status updates."
+          }
+        },
+        {
+          "name": "No token on revenue report (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is UNAUTHORIZED', function () { pm.expect(json.error.code).to.eql('UNAUTHORIZED'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/revenue?from={{weekAgo}}&to={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "revenue"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{weekAgo}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "Anonymous request to an admin endpoint."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Generate daily revenue",
+      "description": "Feature: POST /admin/reports/revenue/generate.",
+      "item": [
+        {
+          "name": "Generate revenue for today",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('rowsAffected is a number >= 0', function () {",
+                  "  pm.expect(json.data.rowsAffected).to.be.a('number');",
+                  "  pm.expect(json.data.rowsAffected).to.be.at.least(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/revenue/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "revenue",
+                "generate"
+              ]
+            },
+            "description": "Calls sp_generate_daily_revenue(date): upserts station_daily_revenue. Safe to repeat.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"{{today}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Generate revenue for 7 days ago (re-runnable upsert)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('rowsAffected is a number >= 0', function () {",
+                  "  pm.expect(json.data.rowsAffected).to.be.a('number');",
+                  "  pm.expect(json.data.rowsAffected).to.be.at.least(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/revenue/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "revenue",
+                "generate"
+              ]
+            },
+            "description": "Calls sp_generate_daily_revenue(date): upserts station_daily_revenue. Safe to repeat.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"{{weekAgo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Passenger token on generate (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/revenue/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "revenue",
+                "generate"
+              ]
+            },
+            "description": "Only ADMIN may generate reports.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"{{today}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Popular routes report",
+      "description": "Feature: GET /admin/reports/popular-routes.",
+      "item": [
+        {
+          "name": "Popular routes (RANK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"routeId\", \"routeName\", \"bookingCount\", \"popularityRank\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});",
+                  "pm.test('ranks start at 1 or more', function () {",
+                  "  json.data.forEach(function (r) { pm.expect(r.popularityRank).to.be.at.least(1); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/popular-routes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "popular-routes"
+              ]
+            },
+            "description": "View v_popular_routes: bookings per route (not EXPIRED) ranked with RANK()."
+          }
+        },
+        {
+          "name": "Passenger token on popular routes (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/popular-routes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "popular-routes"
+              ]
+            },
+            "description": "Admin only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delay reports",
+      "description": "Feature: GET /admin/reports/delay-metrics and /admin/reports/delayed-trains.",
+      "item": [
+        {
+          "name": "Delay metrics per train",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"trainId\", \"trainNo\", \"trainName\", \"totalRuns\", \"delayedRuns\", \"avgDelayMin\", \"maxDelayMin\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});",
+                  "pm.test('delayed runs never exceed total runs', function () {",
+                  "  json.data.forEach(function (r) { pm.expect(r.delayedRuns).to.be.at.most(r.totalRuns); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/delay-metrics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "delay-metrics"
+              ]
+            },
+            "description": "View v_delay_metrics: runs, delayed runs, average and maximum delay per train."
+          }
+        },
+        {
+          "name": "Delayed trains, default threshold (15)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"trainId\", \"trainNo\", \"trainName\", \"avgDelayMin\", \"delayedRuns\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});",
+                  "pm.test('every train has average delay above 15', function () {",
+                  "  json.data.forEach(function (r) { pm.expect(r.avgDelayMin).to.be.above(15); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/delayed-trains",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "delayed-trains"
+              ]
+            },
+            "description": "GROUP BY train HAVING AVG(Delay_Minutes) > threshold; threshold defaults to 15."
+          }
+        },
+        {
+          "name": "Delayed trains, threshold 15",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"trainId\", \"trainNo\", \"trainName\", \"avgDelayMin\", \"delayedRuns\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});",
+                  "pm.test('every train has average delay above 15', function () {",
+                  "  json.data.forEach(function (r) { pm.expect(r.avgDelayMin).to.be.above(15); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/delayed-trains?thresholdMinutes=15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "delayed-trains"
+              ],
+              "query": [
+                {
+                  "key": "thresholdMinutes",
+                  "value": "15"
+                }
+              ]
+            },
+            "description": "Same as the default, threshold sent explicitly."
+          }
+        },
+        {
+          "name": "Delayed trains, threshold 0",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"trainId\", \"trainNo\", \"trainName\", \"avgDelayMin\", \"delayedRuns\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});",
+                  "pm.test('every train has average delay above 0', function () {",
+                  "  json.data.forEach(function (r) { pm.expect(r.avgDelayMin).to.be.above(0); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/delayed-trains?thresholdMinutes=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "delayed-trains"
+              ],
+              "query": [
+                {
+                  "key": "thresholdMinutes",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Threshold 0 lists every train with any average delay."
+          }
+        },
+        {
+          "name": "Passenger token on delay metrics (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/delay-metrics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "delay-metrics"
+              ]
+            },
+            "description": "Admin only."
+          }
+        },
+        {
+          "name": "Passenger token on delayed trains (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/delayed-trains?thresholdMinutes=15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "delayed-trains"
+              ],
+              "query": [
+                {
+                  "key": "thresholdMinutes",
+                  "value": "15"
+                }
+              ]
+            },
+            "description": "Admin only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Top stations report",
+      "description": "Feature: GET /admin/reports/top-stations.",
+      "item": [
+        {
+          "name": "Stations above average revenue",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"stationId\", \"stationName\", \"totalRevenue\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/top-stations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "top-stations"
+              ]
+            },
+            "description": "Subquery report: stations whose total revenue is above the average per-station revenue."
+          }
+        },
+        {
+          "name": "Passenger token on top stations (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/top-stations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "top-stations"
+              ]
+            },
+            "description": "Admin only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard summary",
+      "description": "Feature: GET /admin/dashboard/summary.",
+      "item": [
+        {
+          "name": "Admin dashboard summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('summary has all six numbers', function () {",
+                  "  [\"totalBookings\", \"confirmedBookings\", \"totalRevenue\", \"activeTrains\", \"delayedRunsToday\", \"cancellationsToday\"].forEach(function (k) {",
+                  "    pm.expect(json.data).to.have.property(k);",
+                  "    pm.expect(json.data[k]).to.be.a('number');",
+                  "  });",
+                  "});",
+                  "pm.test('confirmed bookings never exceed total bookings', function () {",
+                  "  pm.expect(json.data.confirmedBookings).to.be.at.most(json.data.totalBookings);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "summary"
+              ]
+            },
+            "description": "Single object with the six dashboard counters."
+          }
+        },
+        {
+          "name": "Passenger token on dashboard (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "summary"
+              ]
+            },
+            "description": "Admin only."
+          }
+        },
+        {
+          "name": "Operator token on dashboard (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "summary"
+              ]
+            },
+            "description": "OPERATOR is not ADMIN, so /admin/** is closed."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ops event log",
+      "description": "Feature: GET /admin/ops-events (MongoDB event log).",
+      "item": [
+        {
+          "name": "Latest 50 ops events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"runId\", \"status\", \"delayMinutes\", \"reason\", \"changedBy\", \"at\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});",
+                  "pm.test('at most 50 events', function () { pm.expect(json.data.length).to.be.at.most(50); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/ops-events?limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "ops-events"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Reads Mongo collection ops_event_log. Returns an empty list when app.mongo.enabled=false."
+          }
+        },
+        {
+          "name": "Latest 5 ops events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('first row (if any) has the expected fields', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    [\"runId\", \"status\", \"delayMinutes\", \"reason\", \"changedBy\", \"at\"].forEach(function (k) { pm.expect(json.data[0]).to.have.property(k); });",
+                  "  }",
+                  "});",
+                  "pm.test('at most 5 events', function () { pm.expect(json.data.length).to.be.at.most(5); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/ops-events?limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "ops-events"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "The limit parameter caps the number of events."
+          }
+        },
+        {
+          "name": "Passenger token on ops events (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/ops-events?limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "ops-events"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Admin only."
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Local (non-persistent) date variables used in URLs and bodies: {{today}}, {{weekAgo}}, {{monthAgo}}.",
+          "function pad(n) { return String(n).padStart(2, '0'); }",
+          "function fmt(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }",
+          "function daysAgo(n) { const d = new Date(); d.setDate(d.getDate() - n); return fmt(d); }",
+          "pm.variables.set('today', daysAgo(0));",
+          "pm.variables.set('weekAgo', daysAgo(7));",
+          "pm.variables.set('monthAgo', daysAgo(30));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "passengerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "operatorToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

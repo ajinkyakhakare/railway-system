@@ -1,0 +1,93 @@
+erDiagram
+    train_run ||--o{ seat_inventory : "has inventory"
+    coach_type ||--o{ seat_inventory : "classifies"
+    app_user ||--o{ booking : "makes"
+    train_run ||--o{ booking : "is booked on"
+    station ||--o{ booking : "boarding station"
+    station ||--o{ booking : "destination station"
+    booking ||--o{ booking_passenger : "contains"
+    passenger ||--o{ booking_passenger : "travels as"
+    train_run ||--o{ seat_allocation : "allocates on"
+    seat ||--o{ seat_allocation : "is allocated"
+    booking_passenger ||--o| seat_allocation : "gets"
+
+    seat_inventory {
+        int Inventory_ID PK
+        int Run_ID FK
+        string Class_Code FK
+        int Total_Seats
+        int Available_CNF
+        int RAC_Count
+        int WL_Count
+        int Max_RAC
+        int Max_WL
+    }
+
+    booking {
+        int Booking_ID PK
+        string PNR
+        int User_ID FK
+        int Run_ID FK
+        string Class_Code
+        int From_Station_ID FK
+        int To_Station_ID FK
+        string Booking_Status
+        decimal Total_Fare
+        datetime Booked_At
+    }
+
+    booking_passenger {
+        int Booking_Passenger_ID PK
+        int Booking_ID FK
+        int Passenger_ID FK
+        string Status
+        decimal Base_Fare
+        string Concession_Type
+        decimal Fare_Amount
+    }
+
+    seat_allocation {
+        int Allocation_ID PK
+        int Run_ID FK
+        int Seat_ID FK
+        int Booking_Passenger_ID FK
+    }
+
+    booking_status_history {
+        int History_ID PK
+        int Booking_Passenger_ID
+        string Old_Status
+        string New_Status
+        datetime Changed_At
+    }
+
+    train_run {
+        int Run_ID PK
+        int Train_ID
+        date Journey_Date
+    }
+
+    app_user {
+        int User_ID PK
+        string Email
+    }
+
+    station {
+        int Station_ID PK
+        string Station_Code
+    }
+
+    passenger {
+        int Passenger_ID PK
+        string Full_Name
+    }
+
+    seat {
+        int Seat_ID PK
+        int Seat_No
+    }
+
+    coach_type {
+        int Coach_Type_ID PK
+        string Class_Code
+    }

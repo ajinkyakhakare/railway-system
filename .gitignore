@@ -1,0 +1,86 @@
+# =====================================================================
+# railway-system .gitignore
+# Java / Maven, Node, IDE folders, environment files, OS files
+# =====================================================================
+
+# ---------- Java / Maven ----------
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*
+replay_pid*
+.mvn/wrapper/maven-wrapper.jar
+dependency-reduced-pom.xml
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# Spring Boot local overrides (may contain passwords or keys)
+application-local.yml
+application-local.yaml
+application-local.properties
+backend/src/main/resources/application-local.yml
+
+# ---------- Node / Vite / React ----------
+node_modules/
+dist/
+dist-ssr/
+build/
+coverage/
+.vite/
+.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.local
+
+# ---------- Environment files (never commit secrets) ----------
+.env
+.env.*
+!.env.example
+*.env
+
+# ---------- IDE / editor folders ----------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated/
+.springBeans
+.sts4-cache/
+nbproject/
+nbbuild/
+nbdist/
+.nb-gradle/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# ---------- Operating system files ----------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ---------- Local database dumps and temporary files ----------
+*.bak
+*.tmp
+*.temp
+*.dump

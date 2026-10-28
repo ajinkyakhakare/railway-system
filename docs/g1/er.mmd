@@ -1,0 +1,91 @@
+erDiagram
+    station ||--o{ route_stop : "is visited as"
+    station ||--o{ route : "is source of"
+    station ||--o{ route : "is destination of"
+    route ||--o{ route_stop : "consists of"
+    route ||--o{ train : "is followed by"
+    train ||--o{ train_schedule : "runs on"
+    train ||--o{ train_coach : "has"
+    coach_type ||--o{ train_coach : "classifies"
+    train_coach ||--o{ seat : "contains"
+    train ||--o{ train_run : "operates"
+    route_stop ||..o{ route_stop_audit : "audited by (logical)"
+
+    station {
+        int Station_ID PK
+        string Station_Code
+        string Station_Name
+        string City
+        string State
+    }
+
+    route {
+        int Route_ID PK
+        string Route_Name
+        int Source_Station_ID FK
+        int Dest_Station_ID FK
+    }
+
+    route_stop {
+        int Route_Stop_ID PK
+        int Route_ID FK
+        int Station_ID FK
+        int Stop_Seq
+        time Arrival_Time
+        time Departure_Time
+        int Day_Offset
+        int Distance_From_Source_Km
+    }
+
+    train {
+        int Train_ID PK
+        string Train_No
+        string Train_Name
+        string Train_Type
+        int Route_ID FK
+        boolean Is_Active
+    }
+
+    train_schedule {
+        int Schedule_ID PK
+        int Train_ID FK
+        int Day_Of_Week
+    }
+
+    coach_type {
+        int Coach_Type_ID PK
+        string Class_Code
+        string Class_Name
+        int Seats_Per_Coach
+    }
+
+    train_coach {
+        int Coach_ID PK
+        int Train_ID FK
+        int Coach_Type_ID FK
+        string Coach_Number
+    }
+
+    seat {
+        int Seat_ID PK
+        int Coach_ID FK
+        int Seat_No
+        string Berth_Type
+    }
+
+    train_run {
+        int Run_ID PK
+        int Train_ID FK
+        date Journey_Date
+        datetime Created_At
+    }
+
+    route_stop_audit {
+        int Audit_ID PK
+        int Route_Stop_ID
+        time Old_Arrival_Time
+        time New_Arrival_Time
+        time Old_Departure_Time
+        time New_Departure_Time
+        datetime Changed_At
+    }

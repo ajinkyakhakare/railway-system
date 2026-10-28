@@ -1,0 +1,2147 @@
+{
+  "info": {
+    "_postman_id": "ce059668-98ab-4f6a-9deb-469d1e1f6d45",
+    "name": "Railway System - G4 Payment, Cancellation & Refund",
+    "description": "Group 4 (Payment, Cancellation & Refund) test collection for the National Railway Reservation & Management System. Run the whole collection in order with the Collection Runner.\n\nRequirements: database built and seeded (db/ scripts), backend running on localhost:8080 with app.auth.dev-mode=true, app.auth.require-login-otp=false, app.auth.require-payment-otp=true and app.payment.mode=MOCK. Set the paymentMode collection variable to RAZORPAY only when the backend runs in Razorpay test mode.\n\nFlow: login, search run, create booking (Asha, passengers 1 and 2), fare quote, payment OTP, wrong-OTP check, create payment order, mock-confirm, payment history, cancellation preview, cancel, refunds, then the admin fare, concession and audit endpoints. Negative cases check the error code: OTP_INVALID, PAYMENT_NOT_ALLOWED, ALREADY_CANCELLED, NOT_OWNER and 403 FORBIDDEN.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth setup",
+      "description": "Run first. Logs in the three seeded users (password Test@1234) and stores their JWTs in adminToken, passengerToken and operatorToken.",
+      "item": [
+        {
+          "name": "Login as admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('a token was returned (app.auth.require-login-otp must be false)', function () {",
+                  "    pm.expect(json.data.token).to.be.a('string');",
+                  "    pm.expect(json.data.token.length).to.be.above(20);",
+                  "});",
+                  "pm.test('user has role ADMIN', function () {",
+                  "    pm.expect(json.data.user.roles).to.include('ADMIN');",
+                  "});",
+                  "pm.collectionVariables.set('adminToken', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Stores the JWT in the collection variable adminToken."
+          }
+        },
+        {
+          "name": "Login as passenger (Asha)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('a token was returned (app.auth.require-login-otp must be false)', function () {",
+                  "    pm.expect(json.data.token).to.be.a('string');",
+                  "    pm.expect(json.data.token.length).to.be.above(20);",
+                  "});",
+                  "pm.test('user has role PASSENGER', function () {",
+                  "    pm.expect(json.data.user.roles).to.include('PASSENGER');",
+                  "});",
+                  "pm.collectionVariables.set('passengerToken', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"asha@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Stores the JWT in the collection variable passengerToken."
+          }
+        },
+        {
+          "name": "Login as operator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('a token was returned (app.auth.require-login-otp must be false)', function () {",
+                  "    pm.expect(json.data.token).to.be.a('string');",
+                  "    pm.expect(json.data.token.length).to.be.above(20);",
+                  "});",
+                  "pm.test('user has role OPERATOR', function () {",
+                  "    pm.expect(json.data.user.roles).to.include('OPERATOR');",
+                  "});",
+                  "pm.collectionVariables.set('operatorToken', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"operator@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Stores the JWT in the collection variable operatorToken."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search trains",
+      "description": "Group 1 prerequisite: finds the run (train 11001, Mumbai CSMT to Pune Jn) that the rest of the collection books.",
+      "item": [
+        {
+          "name": "Search trains CSMT to Pune",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Travel date = today + 4 days: far enough ahead that the cancellation is more than 48 h",
+                  "// before departure (10 percent refund tier) and every train has a run (runs exist for 14 days).",
+                  "const d = new Date();",
+                  "d.setDate(d.getDate() + 4);",
+                  "const pad = function (n) { return String(n).padStart(2, '0'); };",
+                  "pm.collectionVariables.set('journeyDate', d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('search returns at least one run', function () {",
+                  "    pm.expect(json.data).to.be.an('array').that.is.not.empty;",
+                  "});",
+                  "const train = json.data.find(function (t) { return t.trainNo === '11001'; });",
+                  "pm.test('train 11001 (has SL, 3A and CC coaches) is in the result', function () {",
+                  "    pm.expect(train, 'train 11001 not found').to.exist;",
+                  "});",
+                  "pm.test('result row has the contract fields', function () {",
+                  "    pm.expect(train).to.have.all.keys('runId', 'trainId', 'trainNo', 'trainName', 'trainType',",
+                  "        'fromStationId', 'toStationId', 'journeyDate', 'departureTime', 'arrivalTime',",
+                  "        'durationMin', 'distanceKm');",
+                  "});",
+                  "if (train) { pm.collectionVariables.set('runId', String(train.runId)); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/search?fromStationId=2&toStationId=1&date={{journeyDate}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "fromStationId",
+                  "value": "2"
+                },
+                {
+                  "key": "toStationId",
+                  "value": "1"
+                },
+                {
+                  "key": "date",
+                  "value": "{{journeyDate}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create booking",
+      "description": "Group 3 prerequisite: Asha books passengers 1 (Asha) and 2 (Suresh, senior) in class SL. The booking is PENDING_PAYMENT until it is paid.",
+      "item": [
+        {
+          "name": "Create booking (passengers 1 and 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of 200,201', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('booking id and 10 digit PNR returned', function () {",
+                  "    pm.expect(json.data.bookingId).to.be.a('number');",
+                  "    pm.expect(String(json.data.pnr)).to.match(/^[0-9]{10}$/);",
+                  "});",
+                  "pm.test('two passengers booked, each with CNF, RAC or WL', function () {",
+                  "    pm.expect(json.data.passengers).to.have.lengthOf(2);",
+                  "    json.data.passengers.forEach(function (p) {",
+                  "        pm.expect(p.status).to.be.oneOf(['CNF', 'RAC', 'WL']);",
+                  "    });",
+                  "});",
+                  "const p1 = json.data.passengers.find(function (p) { return p.passengerId === 1; });",
+                  "const p2 = json.data.passengers.find(function (p) { return p.passengerId === 2; });",
+                  "pm.test('Group 3 priced the booking with the Group 4 functions (total = sum of fares)', function () {",
+                  "    pm.expect(Number(json.data.totalFare)).to.be.closeTo(Number(p1.fareAmount) + Number(p2.fareAmount), 0.01);",
+                  "    pm.expect(Number(p2.fareAmount)).to.be.below(Number(p2.baseFare));  // Suresh is a senior citizen",
+                  "});",
+                  "pm.collectionVariables.set('bookingId', String(json.data.bookingId));",
+                  "pm.collectionVariables.set('pnr', String(json.data.pnr));",
+                  "pm.collectionVariables.set('bookingTotalFare', String(json.data.totalFare));",
+                  "pm.collectionVariables.set('bookingPassengerId1', String(p1.bookingPassengerId));",
+                  "pm.collectionVariables.set('bookingPassengerId2', String(p2.bookingPassengerId));",
+                  "pm.collectionVariables.set('bp1Fare', String(p1.fareAmount));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"runId\": {{runId}},\n  \"classCode\": \"SL\",\n  \"fromStationId\": 2,\n  \"toStationId\": 1,\n  \"passengerIds\": [1, 2]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fare quote",
+      "description": "Group 4: price a trip with the SQL functions only (distance, base fare, concession, net fare).",
+      "item": [
+        {
+          "name": "Quote fare for passengers 1 and 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('distance CSMT to Pune is 192 km', function () {",
+                  "    pm.expect(Number(json.data.distanceKm)).to.eql(192);",
+                  "});",
+                  "const q1 = json.data.passengers.find(function (p) { return p.passengerId === 1; });",
+                  "const q2 = json.data.passengers.find(function (p) { return p.passengerId === 2; });",
+                  "pm.test('quote lists both passengers with the contract fields', function () {",
+                  "    pm.expect(json.data.passengers).to.have.lengthOf(2);",
+                  "    pm.expect(q1).to.include.all.keys('passengerId', 'passengerName', 'concessionType', 'baseFare', 'netFare');",
+                  "});",
+                  "pm.test('fare pipeline: adult pays base fare, senior pays less', function () {",
+                  "    pm.expect(Number(q1.netFare)).to.eql(Number(q1.baseFare));",
+                  "    pm.expect(Number(q2.netFare)).to.be.below(Number(q2.baseFare));",
+                  "});",
+                  "pm.test('totalFare equals the sum of net fares and the booking total', function () {",
+                  "    pm.expect(Number(json.data.totalFare)).to.be.closeTo(Number(q1.netFare) + Number(q2.netFare), 0.01);",
+                  "    pm.expect(Number(json.data.totalFare)).to.be.closeTo(Number(pm.collectionVariables.get('bookingTotalFare')), 0.01);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fares/quote?runId={{runId}}&classCode=SL&fromStationId=2&toStationId=1&passengerIds=1,2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fares",
+                "quote"
+              ],
+              "query": [
+                {
+                  "key": "runId",
+                  "value": "{{runId}}"
+                },
+                {
+                  "key": "classCode",
+                  "value": "SL"
+                },
+                {
+                  "key": "fromStationId",
+                  "value": "2"
+                },
+                {
+                  "key": "toStationId",
+                  "value": "1"
+                },
+                {
+                  "key": "passengerIds",
+                  "value": "1,2"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Quote with another user's passengers (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test('error.code is one of PASSENGER_NOT_OWNED,NOT_OWNER', function () {",
+                  "    pm.expect(json.error.code).to.be.oneOf([\"PASSENGER_NOT_OWNED\", \"NOT_OWNER\"]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fares/quote?runId={{runId}}&classCode=SL&fromStationId=2&toStationId=1&passengerIds=1,2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fares",
+                "quote"
+              ],
+              "query": [
+                {
+                  "key": "runId",
+                  "value": "{{runId}}"
+                },
+                {
+                  "key": "classCode",
+                  "value": "SL"
+                },
+                {
+                  "key": "fromStationId",
+                  "value": "2"
+                },
+                {
+                  "key": "toStationId",
+                  "value": "1"
+                },
+                {
+                  "key": "passengerIds",
+                  "value": "1,2"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "The operator does not own passengers 1 and 2, so the quote is refused."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment OTP",
+      "description": "Group 2 and Group 4: payments are protected by a one-time password (purpose PAYMENT, 5 minutes, single use).",
+      "item": [
+        {
+          "name": "Request payment OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('challenge id and expiry returned', function () {",
+                  "    pm.expect(json.data.challengeId).to.be.a('number');",
+                  "    pm.expect(json.data.expiresAt).to.be.a('string');",
+                  "});",
+                  "pm.test('devOtp present (app.auth.dev-mode must be true for this demo)', function () {",
+                  "    pm.expect(json.data.devOtp).to.be.a('string');",
+                  "});",
+                  "pm.collectionVariables.set('otpChallengeId', String(json.data.challengeId));",
+                  "pm.collectionVariables.set('devOtp', String(json.data.devOtp));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/payment-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "payment-otp"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Create order with wrong OTP (negative)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Build an OTP that is certainly different from the real one.",
+                  "const real = pm.collectionVariables.get('devOtp');",
+                  "pm.collectionVariables.set('wrongOtp', real === '000000' ? '111111' : '000000');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test('error.code is OTP_INVALID', function () {",
+                  "    pm.expect(json.error.code).to.eql('OTP_INVALID');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": {{bookingId}},\n  \"otpChallengeId\": {{otpChallengeId}},\n  \"otp\": \"{{wrongOtp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Request a fresh payment OTP (a failed attempt may burn the old one)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('challenge id and expiry returned', function () {",
+                  "    pm.expect(json.data.challengeId).to.be.a('number');",
+                  "    pm.expect(json.data.expiresAt).to.be.a('string');",
+                  "});",
+                  "pm.test('devOtp present (app.auth.dev-mode must be true for this demo)', function () {",
+                  "    pm.expect(json.data.devOtp).to.be.a('string');",
+                  "});",
+                  "pm.collectionVariables.set('otpChallengeId', String(json.data.challengeId));",
+                  "pm.collectionVariables.set('devOtp', String(json.data.devOtp));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/payment-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "payment-otp"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment orders",
+      "description": "Group 4: create the payment order (OTP checked), confirm it, and try to pay again.",
+      "item": [
+        {
+          "name": "Create payment order (MOCK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of 200,201', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('payment id returned', function () {",
+                  "    pm.expect(json.data.paymentId).to.be.a('number');",
+                  "});",
+                  "pm.test('mode matches the paymentMode collection variable', function () {",
+                  "    pm.expect(json.data.mode).to.eql(pm.collectionVariables.get('paymentMode'));",
+                  "});",
+                  "pm.test('amount equals the booking total fare', function () {",
+                  "    pm.expect(Number(json.data.amount)).to.be.closeTo(Number(pm.collectionVariables.get('bookingTotalFare')), 0.01);",
+                  "});",
+                  "pm.test('gateway order id has the right shape for the mode', function () {",
+                  "    pm.expect(json.data.gatewayOrderId).to.be.a('string');",
+                  "    if (json.data.mode === 'MOCK') {",
+                  "        pm.expect(json.data.gatewayOrderId).to.match(/^MOCK_/);",
+                  "        pm.expect(json.data.razorpayKeyId).to.eql(null);",
+                  "    } else {",
+                  "        pm.expect(json.data.razorpayKeyId).to.be.a('string');",
+                  "    }",
+                  "});",
+                  "pm.collectionVariables.set('paymentId', String(json.data.paymentId));",
+                  "pm.collectionVariables.set('gatewayOrderId', String(json.data.gatewayOrderId));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": {{bookingId}},\n  \"otpChallengeId\": {{otpChallengeId}},\n  \"otp\": \"{{devOtp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Mock-confirm payment (success)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// This request only makes sense in MOCK mode.",
+                  "if (pm.collectionVariables.get('paymentMode') === 'RAZORPAY') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('payment is SUCCESS', function () {",
+                  "    pm.expect(json.data.paymentStatus).to.eql('SUCCESS');",
+                  "});",
+                  "pm.test('trigger trg_payment_confirm made the booking CONFIRMED', function () {",
+                  "    pm.expect(json.data.bookingStatus).to.eql('CONFIRMED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/mock-confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "mock-confirm"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentId\": {{paymentId}},\n  \"success\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Verify Razorpay payment (RAZORPAY mode only, skipped in MOCK)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Razorpay test mode only. In MOCK mode this request is skipped.",
+                  "// Before running it in RAZORPAY mode: pay in Razorpay Checkout (test card) and copy the returned",
+                  "// razorpay_payment_id and razorpay_signature into the collection variables of the same names.",
+                  "if (pm.collectionVariables.get('paymentMode') !== 'RAZORPAY') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('payment is SUCCESS', function () {",
+                  "    pm.expect(json.data.paymentStatus).to.eql('SUCCESS');",
+                  "});",
+                  "pm.test('booking is CONFIRMED', function () {",
+                  "    pm.expect(json.data.bookingStatus).to.eql('CONFIRMED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "verify"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentId\": {{paymentId}},\n  \"razorpayPaymentId\": \"{{razorpayPaymentId}}\",\n  \"razorpaySignature\": \"{{razorpaySignature}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Request payment OTP (for the negative test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('challenge id and expiry returned', function () {",
+                  "    pm.expect(json.data.challengeId).to.be.a('number');",
+                  "    pm.expect(json.data.expiresAt).to.be.a('string');",
+                  "});",
+                  "pm.test('devOtp present (app.auth.dev-mode must be true for this demo)', function () {",
+                  "    pm.expect(json.data.devOtp).to.be.a('string');",
+                  "});",
+                  "pm.collectionVariables.set('otpChallengeId', String(json.data.challengeId));",
+                  "pm.collectionVariables.set('devOtp', String(json.data.devOtp));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/payment-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "payment-otp"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Pay an already confirmed booking (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test('error.code is PAYMENT_NOT_ALLOWED', function () {",
+                  "    pm.expect(json.error.code).to.eql('PAYMENT_NOT_ALLOWED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": {{bookingId}},\n  \"otpChallengeId\": {{otpChallengeId}},\n  \"otp\": \"{{devOtp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "A valid OTP is sent, so the refusal comes from the booking state (it is CONFIRMED, not PENDING_PAYMENT)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment history",
+      "description": "Group 4: view v_payment_history for the logged-in user.",
+      "item": [
+        {
+          "name": "My payments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "const row = json.data.find(function (r) { return String(r.paymentId) === pm.collectionVariables.get('paymentId'); });",
+                  "pm.test('the new payment is listed', function () {",
+                  "    pm.expect(row, 'payment not in history').to.exist;",
+                  "});",
+                  "pm.test('row is SUCCESS and matches the booking', function () {",
+                  "    pm.expect(row.paymentStatus).to.eql('SUCCESS');",
+                  "    pm.expect(String(row.pnr)).to.eql(pm.collectionVariables.get('pnr'));",
+                  "    pm.expect(Number(row.amount)).to.be.closeTo(Number(pm.collectionVariables.get('bookingTotalFare')), 0.01);",
+                  "    pm.expect(row.paidAt).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "my"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cancellation",
+      "description": "Group 4: preview and perform a cancellation, then check the duplicate and ownership guards.",
+      "item": [
+        {
+          "name": "Cancellation preview (passenger 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('preview has the contract fields', function () {",
+                  "    pm.expect(json.data).to.include.all.keys('bookingPassengerId', 'fareAmount', 'hoursBeforeDeparture', 'deductionPercent', 'estimatedRefund');",
+                  "});",
+                  "pm.test('more than 48 hours before departure, so the 10 percent tier applies', function () {",
+                  "    pm.expect(Number(json.data.hoursBeforeDeparture)).to.be.above(48);",
+                  "    pm.expect(Number(json.data.deductionPercent)).to.eql(10);",
+                  "});",
+                  "pm.test('estimated refund = fare minus deduction', function () {",
+                  "    const fare = Number(json.data.fareAmount);",
+                  "    const pct = Number(json.data.deductionPercent);",
+                  "    pm.expect(Number(json.data.estimatedRefund)).to.be.closeTo(fare - Math.round(fare * pct) / 100, 0.011);",
+                  "});",
+                  "pm.collectionVariables.set('previewRefund', String(json.data.estimatedRefund));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cancellations/preview?bookingPassengerId={{bookingPassengerId1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cancellations",
+                "preview"
+              ],
+              "query": [
+                {
+                  "key": "bookingPassengerId",
+                  "value": "{{bookingPassengerId1}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel passenger 1's ticket",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of 200,201', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('cancellation id returned', function () {",
+                  "    pm.expect(json.data.cancellationId).to.be.a('number');",
+                  "});",
+                  "const orig = Number(pm.collectionVariables.get('bp1Fare'));",
+                  "const pct = Number(json.data.deductionPercent);",
+                  "pm.test('original fare equals the booked fare', function () {",
+                  "    pm.expect(Number(json.data.originalFare)).to.be.closeTo(orig, 0.01);",
+                  "});",
+                  "pm.test('deduction is 10 percent (refund_rule tier 48 h or more)', function () {",
+                  "    pm.expect(pct).to.eql(10);",
+                  "});",
+                  "pm.test('refund = original fare minus deduction, and equals the preview', function () {",
+                  "    const expected = orig - Math.round(orig * pct) / 100;",
+                  "    pm.expect(Number(json.data.refundAmount)).to.be.closeTo(expected, 0.011);",
+                  "    pm.expect(Number(json.data.refundAmount)).to.be.closeTo(Number(pm.collectionVariables.get('previewRefund')), 0.011);",
+                  "});",
+                  "pm.test('promotedCount is a number (RAC/WL promotions done by Group 3 helper)', function () {",
+                  "    pm.expect(json.data.promotedCount).to.be.a('number');",
+                  "    pm.expect(json.data.promotedCount).to.be.at.least(0);",
+                  "});",
+                  "pm.collectionVariables.set('cancellationId', String(json.data.cancellationId));",
+                  "pm.collectionVariables.set('cancelRefund', String(json.data.refundAmount));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cancellations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cancellations"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingPassengerId\": {{bookingPassengerId1}},\n  \"reason\": \"Change of plans\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cancel the same ticket again (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test('error.code is ALREADY_CANCELLED', function () {",
+                  "    pm.expect(json.error.code).to.eql('ALREADY_CANCELLED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cancellations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cancellations"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingPassengerId\": {{bookingPassengerId1}},\n  \"reason\": \"Change of plans\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cancel another user's ticket (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test('error.code is NOT_OWNER', function () {",
+                  "    pm.expect(json.error.code).to.eql('NOT_OWNER');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cancellations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cancellations"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingPassengerId\": {{bookingPassengerId2}},\n  \"reason\": \"Not my ticket\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Passenger 2 belongs to Asha's booking; the operator is a different user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Refunds",
+      "description": "Group 4: view v_refund_summary for the logged-in user.",
+      "item": [
+        {
+          "name": "My refunds",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "const row = json.data.find(function (r) { return String(r.cancellationId) === pm.collectionVariables.get('cancellationId'); });",
+                  "pm.test('the refund of the new cancellation is listed', function () {",
+                  "    pm.expect(row, 'refund row missing').to.exist;",
+                  "});",
+                  "pm.test('refund row matches the cancellation result', function () {",
+                  "    pm.expect(Number(row.refundAmount)).to.be.closeTo(Number(pm.collectionVariables.get('cancelRefund')), 0.011);",
+                  "    pm.expect(Number(row.deductionPercent)).to.eql(10);",
+                  "    pm.expect(Number(row.deductionAmount)).to.be.closeTo(Number(row.originalFare) - Number(row.refundAmount), 0.011);",
+                  "    pm.expect(row.refundStatus).to.eql('PROCESSED');",
+                  "    pm.expect(String(row.pnr)).to.eql(pm.collectionVariables.get('pnr'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/refunds/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "refunds",
+                "my"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fare rules (admin)",
+      "description": "Group 4 admin: read and change the SL fare rule. Changing it fires trg_fare_audit. The last request puts the original values back; if a run is aborted before it, reseed db/52_seed_g4.sql.",
+      "item": [
+        {
+          "name": "List fare rules",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('five fare rules exist (SL, 3A, 2A, 1A, CC)', function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    pm.expect(json.data.length).to.be.at.least(5);",
+                  "});",
+                  "const sl = json.data.find(function (r) { return r.classCode === 'SL'; });",
+                  "pm.test('SL rule has the contract fields', function () {",
+                  "    pm.expect(sl).to.include.all.keys('fareRuleId', 'classCode', 'baseFarePerKm', 'minFare', 'updatedAt');",
+                  "});",
+                  "pm.collectionVariables.set('fareRuleId', String(sl.fareRuleId));",
+                  "pm.collectionVariables.set('origBaseFarePerKm', String(sl.baseFarePerKm));",
+                  "pm.collectionVariables.set('origMinFare', String(sl.minFare));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/fare-rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "fare-rules"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update SL fare rule (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('row returned with the new values', function () {",
+                  "    pm.expect(json.data.fareRuleId).to.eql(Number(pm.collectionVariables.get('fareRuleId')));",
+                  "    pm.expect(Number(json.data.baseFarePerKm)).to.eql(0.6);",
+                  "    pm.expect(Number(json.data.minFare)).to.eql(125);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/fare-rules/{{fareRuleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "fare-rules",
+                "{{fareRuleId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseFarePerKm\": 0.60,\n  \"minFare\": 125\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update fare rule as a passenger (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test('error.code is FORBIDDEN', function () {",
+                  "    pm.expect(json.error.code).to.eql('FORBIDDEN');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/fare-rules/{{fareRuleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "fare-rules",
+                "{{fareRuleId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseFarePerKm\": 0.60,\n  \"minFare\": 125\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Restore SL fare rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('original values restored', function () {",
+                  "    pm.expect(Number(json.data.baseFarePerKm)).to.eql(Number(pm.collectionVariables.get('origBaseFarePerKm')));",
+                  "    pm.expect(Number(json.data.minFare)).to.eql(Number(pm.collectionVariables.get('origMinFare')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/fare-rules/{{fareRuleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "fare-rules",
+                "{{fareRuleId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseFarePerKm\": {{origBaseFarePerKm}},\n  \"minFare\": {{origMinFare}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Concession rules (admin)",
+      "description": "Group 4 admin: read and change the SENIOR concession. Bookings keep the fare they were priced at, so existing tickets are not affected. The last request restores the original percentage.",
+      "item": [
+        {
+          "name": "List concession rules",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('five concession rules exist', function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    pm.expect(json.data.length).to.be.at.least(5);",
+                  "});",
+                  "const senior = json.data.find(function (r) { return r.concessionType === 'SENIOR'; });",
+                  "pm.test('SENIOR rule has the contract fields', function () {",
+                  "    pm.expect(senior).to.include.all.keys('concessionRuleId', 'concessionType', 'discountPercent', 'description');",
+                  "});",
+                  "pm.collectionVariables.set('seniorRuleId', String(senior.concessionRuleId));",
+                  "pm.collectionVariables.set('origSeniorDiscount', String(senior.discountPercent));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/concession-rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "concession-rules"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update SENIOR discount to 45 percent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('discount changed to 45', function () {",
+                  "    pm.expect(json.data.concessionRuleId).to.eql(Number(pm.collectionVariables.get('seniorRuleId')));",
+                  "    pm.expect(Number(json.data.discountPercent)).to.eql(45);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/concession-rules/{{seniorRuleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "concession-rules",
+                "{{seniorRuleId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discountPercent\": 45\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Restore SENIOR discount",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test('original discount restored', function () {",
+                  "    pm.expect(Number(json.data.discountPercent)).to.eql(Number(pm.collectionVariables.get('origSeniorDiscount')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/concession-rules/{{seniorRuleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "concession-rules",
+                "{{seniorRuleId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discountPercent\": {{origSeniorDiscount}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fare audit (admin)",
+      "description": "Group 4 admin: read fare_audit_log, newest first.",
+      "item": [
+        {
+          "name": "List fare audit log",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "const id = Number(pm.collectionVariables.get('fareRuleId'));",
+                  "const origBase = Number(pm.collectionVariables.get('origBaseFarePerKm'));",
+                  "const origMin = Number(pm.collectionVariables.get('origMinFare'));",
+                  "const mine = json.data.filter(function (r) { return r.fareRuleId === id; });",
+                  "pm.test('audit rows have the contract fields', function () {",
+                  "    pm.expect(mine.length).to.be.at.least(2);",
+                  "    pm.expect(mine[0]).to.include.all.keys('auditId', 'fareRuleId', 'oldBaseFarePerKm', 'newBaseFarePerKm', 'oldMinFare', 'newMinFare', 'changedBy', 'changedAt');",
+                  "});",
+                  "pm.test('trg_fare_audit logged the update (original to 0.60 / 125)', function () {",
+                  "    pm.expect(mine.some(function (r) {",
+                  "        return Number(r.oldBaseFarePerKm) === origBase && Number(r.newBaseFarePerKm) === 0.6 &&",
+                  "               Number(r.oldMinFare) === origMin && Number(r.newMinFare) === 125;",
+                  "    })).to.eql(true);",
+                  "});",
+                  "pm.test('trg_fare_audit logged the restore (0.60 / 125 back to original)', function () {",
+                  "    pm.expect(mine.some(function (r) {",
+                  "        return Number(r.oldBaseFarePerKm) === 0.6 && Number(r.newBaseFarePerKm) === origBase &&",
+                  "               Number(r.oldMinFare) === 125 && Number(r.newMinFare) === origMin;",
+                  "    })).to.eql(true);",
+                  "});",
+                  "pm.test('changedBy is recorded and rows are newest first', function () {",
+                  "    pm.expect(mine[0].changedBy).to.be.a('string');",
+                  "    pm.expect(json.data[0].changedAt >= json.data[json.data.length - 1].changedAt).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/fare-audit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "fare-audit"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "passengerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "operatorToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentMode",
+      "value": "MOCK",
+      "type": "string"
+    },
+    {
+      "key": "razorpayPaymentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "razorpaySignature",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "journeyDate",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pnr",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingTotalFare",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingPassengerId1",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingPassengerId2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bp1Fare",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "otpChallengeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "devOtp",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "wrongOtp",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "gatewayOrderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "previewRefund",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cancellationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cancelRefund",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "fareRuleId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "origBaseFarePerKm",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "origMinFare",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "seniorRuleId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "origSeniorDiscount",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

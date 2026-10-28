@@ -1,0 +1,65 @@
+erDiagram
+    app_user ||--o{ passenger : "owns"
+    app_user ||--o{ user_role : "has"
+    role ||--o{ user_role : "granted via"
+    app_user ||--o{ otp_challenge : "receives"
+    app_user ||--o{ login_audit : "logical, no FK"
+    user_role ||--o{ user_role_audit : "logical, no FK"
+
+    role {
+        int Role_ID PK
+        string Role_Name
+    }
+
+    app_user {
+        int User_ID PK
+        string Email
+        string Password_Hash
+        string Full_Name
+        string Phone
+        boolean Is_Active
+        int Failed_Login_Count
+        datetime Locked_Until
+        datetime Created_At
+    }
+
+    user_role {
+        int User_ID PK, FK
+        int Role_ID PK, FK
+    }
+
+    passenger {
+        int Passenger_ID PK
+        int User_ID FK
+        string Full_Name
+        date Date_Of_Birth
+        string Gender
+        string Concession_Type
+    }
+
+    login_audit {
+        int Login_Audit_ID PK
+        int User_ID FK
+        string Email_Attempted
+        boolean Success
+        string IP_Address
+        datetime Attempted_At
+    }
+
+    user_role_audit {
+        int Audit_ID PK
+        int User_ID FK
+        int Role_ID FK
+        string Action
+        datetime Changed_At
+    }
+
+    otp_challenge {
+        int Otp_ID PK
+        int User_ID FK
+        string Purpose
+        string Otp_Hash
+        datetime Expires_At
+        boolean Is_Used
+        datetime Created_At
+    }

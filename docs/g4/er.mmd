@@ -1,0 +1,90 @@
+erDiagram
+    %% G4 Payment, Cancellation & Refund - ER diagram (paste into mermaid.live)
+    %% booking, booking_passenger and coach_type are stubs owned by G3 / G1.
+
+    coach_type {
+        int Coach_Type_ID PK
+        string Class_Code
+    }
+
+    booking {
+        int Booking_ID PK
+    }
+
+    booking_passenger {
+        int Booking_Passenger_ID PK
+        int Booking_ID FK
+    }
+
+    fare_rule {
+        int Fare_Rule_ID PK
+        string Class_Code FK
+        decimal Base_Fare_Per_Km
+        decimal Min_Fare
+        datetime Updated_At
+    }
+
+    concession_rule {
+        int Concession_Rule_ID PK
+        string Concession_Type
+        decimal Discount_Percent
+        string Description
+    }
+
+    refund_rule {
+        int Refund_Rule_ID PK
+        int Min_Hours_Before
+        int Max_Hours_Before
+        decimal Deduction_Percent
+    }
+
+    payment {
+        int Payment_ID PK
+        int Booking_ID FK
+        decimal Amount
+        string Payment_Mode
+        string Gateway_Order_ID
+        string Gateway_Payment_ID
+        string Payment_Status
+        datetime Created_At
+        datetime Paid_At
+    }
+
+    cancellation {
+        int Cancellation_ID PK
+        int Booking_Passenger_ID FK
+        decimal Hours_Before_Departure
+        string Reason
+        datetime Cancelled_At
+    }
+
+    refund {
+        int Refund_ID PK
+        int Cancellation_ID FK
+        int Payment_ID FK
+        decimal Original_Fare
+        decimal Deduction_Percent
+        decimal Deduction_Amount
+        decimal Refund_Amount
+        string Refund_Status
+        datetime Processed_At
+    }
+
+    fare_audit_log {
+        int Audit_ID PK
+        int Fare_Rule_ID FK
+        decimal Old_Base_Fare_Per_Km
+        decimal New_Base_Fare_Per_Km
+        decimal Old_Min_Fare
+        decimal New_Min_Fare
+        string Changed_By
+        datetime Changed_At
+    }
+
+    booking ||--o{ payment : "is paid by"
+    booking ||--o{ booking_passenger : "has passengers"
+    booking_passenger ||--o| cancellation : "is cancelled by"
+    cancellation ||--o| refund : "results in"
+    payment ||--o{ refund : "is refunded by"
+    coach_type ||--o| fare_rule : "is priced by"
+    fare_rule ||..o{ fare_audit_log : "is audited in (logical, no DB FK)"

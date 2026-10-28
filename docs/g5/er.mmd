@@ -1,0 +1,68 @@
+%% G5 Railway Operations and Analytics - ER diagram (paste into mermaid.live)
+%% Tables owned by G5: train_run_status, delay_log, station_daily_revenue.
+%% Stubs from other groups (only key columns shown): train_run, station, booking, payment.
+%% NOTE: MongoDB collection ops_event_log (runId, status, delayMinutes, reason, changedBy, at)
+%% complements these tables. It is an append-only audit trail of every status update made by
+%% PUT /api/v1/ops/status/:runId and is not part of the MySQL schema.
+erDiagram
+    train_run ||--|| train_run_status : "has live status"
+    train_run ||--o{ delay_log : "has delay history"
+    station |o--o{ train_run_status : "current station"
+    station |o--o{ delay_log : "reported at"
+    station ||--o{ station_daily_revenue : "earns daily revenue"
+    train_run ||--o{ booking : "is booked on"
+    station ||--o{ booking : "origin of"
+    booking ||--o{ payment : "is paid by"
+    payment }o..o{ station_daily_revenue : "summarised into (no FK)"
+
+    train_run_status {
+        int Run_ID PK, FK
+        string Status
+        int Current_Station_ID FK
+        int Delay_Minutes
+        string Last_Reason
+        datetime Updated_At
+    }
+
+    delay_log {
+        int Delay_Log_ID PK
+        int Run_ID FK
+        int Station_ID FK
+        int Delay_Minutes
+        string Reason
+        datetime Logged_At
+    }
+
+    station_daily_revenue {
+        int Revenue_ID PK
+        int Station_ID FK
+        date Revenue_Date
+        decimal Total_Revenue
+        int Ticket_Count
+    }
+
+    train_run {
+        int Run_ID PK
+        date Journey_Date
+    }
+
+    station {
+        int Station_ID PK
+        string Station_Code
+        string Station_Name
+    }
+
+    booking {
+        int Booking_ID PK
+        int Run_ID FK
+        int From_Station_ID FK
+        string Booking_Status
+    }
+
+    payment {
+        int Payment_ID PK
+        int Booking_ID FK
+        decimal Amount
+        string Payment_Status
+        datetime Paid_At
+    }

@@ -1,0 +1,2843 @@
+{
+  "info": {
+    "_postman_id": "dd9f7112-e42c-45d2-a6b9-5886de8d6b00",
+    "name": "Railway System - G2 Passenger & User Management",
+    "description": "Group 2 requests for the National Railway Reservation & Management System.\n\nHOW TO RUN: (1) start MySQL + the Spring Boot backend on port 8080 with the seed data loaded; (2) run the folder 'Auth setup' first; (3) run the remaining folders in order (Collection Runner). Registration creates a fresh account on every run; Account lockout locks only that account.\n\nAssumes app.auth.require-login-otp=false and app.auth.dev-mode=true (defaults in application.yml). The last folder needs db/60_demo_data.sql.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth setup",
+      "item": [
+        {
+          "name": "Login as ADMIN (admin@railway.test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('login returned a token (needs app.auth.require-login-otp=false)', function () {",
+                  "    pm.expect(json.data.otpRequired).to.eql(false);",
+                  "    pm.expect(json.data.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('user has role ADMIN', function () { pm.expect(json.data.user.roles).to.include('ADMIN'); });",
+                  "pm.collectionVariables.set('adminToken', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Logs in as admin@railway.test and stores data.token in the collection variable adminToken."
+          }
+        },
+        {
+          "name": "Login as PASSENGER (asha@railway.test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('login returned a token (needs app.auth.require-login-otp=false)', function () {",
+                  "    pm.expect(json.data.otpRequired).to.eql(false);",
+                  "    pm.expect(json.data.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('user has role PASSENGER', function () { pm.expect(json.data.user.roles).to.include('PASSENGER'); });",
+                  "pm.collectionVariables.set('passengerToken', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"asha@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Logs in as asha@railway.test and stores data.token in the collection variable passengerToken."
+          }
+        },
+        {
+          "name": "Login as OPERATOR (operator@railway.test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('login returned a token (needs app.auth.require-login-otp=false)', function () {",
+                  "    pm.expect(json.data.otpRequired).to.eql(false);",
+                  "    pm.expect(json.data.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('user has role OPERATOR', function () { pm.expect(json.data.user.roles).to.include('OPERATOR'); });",
+                  "pm.collectionVariables.set('operatorToken', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"operator@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Logs in as operator@railway.test and stores data.token in the collection variable operatorToken."
+          }
+        }
+      ],
+      "description": "Run this folder first. It fills adminToken, passengerToken and operatorToken for every other folder."
+    },
+    {
+      "name": "Registration",
+      "item": [
+        {
+          "name": "Register new passenger account",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// A unique e-mail per run so the collection can be re-run without cleaning the database.",
+                  "pm.collectionVariables.set('newUserEmail', 'student_' + Date.now() + '@railway.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200, 201]', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('data.userId is a number', function () { pm.expect(json.data.userId).to.be.a('number'); });",
+                  "pm.collectionVariables.set('newUserId', json.data.userId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Passw0rd@123\",\n  \"fullName\": \"Test Student\",\n  \"phone\": \"9123456789\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Creates app_user + PASSENGER role through sp_register_user. Stores newUserEmail and newUserId for later folders."
+          }
+        },
+        {
+          "name": "Register with an e-mail that already exists -> EMAIL_EXISTS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 409', function () { pm.response.to.have.status(409); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is EMAIL_EXISTS', function () { pm.expect(json.error.code).to.eql('EMAIL_EXISTS'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"asha@railway.test\",\n  \"password\": \"Passw0rd@123\",\n  \"fullName\": \"Duplicate Asha\",\n  \"phone\": \"9123456780\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Register with a weak password (< 8 chars) -> VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set('weakEmail', 'weak_' + Date.now() + '@railway.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is VALIDATION_ERROR', function () { pm.expect(json.error.code).to.eql('VALIDATION_ERROR'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{weakEmail}}\",\n  \"password\": \"abc123\",\n  \"fullName\": \"Weak Password\",\n  \"phone\": \"9123456781\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login",
+      "item": [
+        {
+          "name": "Login with the new account (correct password)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('otpRequired flag is present', function () { pm.expect(json.data).to.have.property('otpRequired'); });",
+                  "if (json.data.otpRequired === false) {",
+                  "    pm.test('token and user are returned', function () {",
+                  "        pm.expect(json.data.token).to.be.a('string').and.not.empty;",
+                  "        pm.expect(json.data.user.email).to.eql(pm.collectionVariables.get('newUserEmail'));",
+                  "        pm.expect(json.data.user.roles).to.include('PASSENGER');",
+                  "    });",
+                  "    pm.collectionVariables.set('newUserToken', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Passw0rd@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Stores newUserToken, used by the Profile folder."
+          }
+        },
+        {
+          "name": "Login with a wrong password -> INVALID_CREDENTIALS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is INVALID_CREDENTIALS', function () { pm.expect(json.error.code).to.eql('INVALID_CREDENTIALS'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Wrong@9999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Failed_Login_Count of the new user becomes 1."
+          }
+        },
+        {
+          "name": "Login again with the correct password (counter reset)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('otpRequired flag is present', function () { pm.expect(json.data).to.have.property('otpRequired'); });",
+                  "if (json.data.otpRequired === false) {",
+                  "    pm.test('token and user are returned', function () {",
+                  "        pm.expect(json.data.token).to.be.a('string').and.not.empty;",
+                  "        pm.expect(json.data.user.email).to.eql(pm.collectionVariables.get('newUserEmail'));",
+                  "        pm.expect(json.data.user.roles).to.include('PASSENGER');",
+                  "    });",
+                  "    pm.collectionVariables.set('newUserToken', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Passw0rd@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "A successful login calls sp_record_login_attempt(success=1) which resets Failed_Login_Count to 0."
+          }
+        },
+        {
+          "name": "Login with an unknown e-mail -> INVALID_CREDENTIALS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is INVALID_CREDENTIALS', function () { pm.expect(json.error.code).to.eql('INVALID_CREDENTIALS'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nobody@railway.test\",\n  \"password\": \"Passw0rd@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Same error as a wrong password so an attacker cannot discover which e-mails exist."
+          }
+        },
+        {
+          "name": "Login with blank fields -> VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is VALIDATION_ERROR', function () { pm.expect(json.error.code).to.eql('VALIDATION_ERROR'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Account lockout",
+      "item": [
+        {
+          "name": "Wrong password attempt 1 of 5 -> INVALID_CREDENTIALS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is INVALID_CREDENTIALS', function () { pm.expect(json.error.code).to.eql('INVALID_CREDENTIALS'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Wrong@1111\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Wrong password attempt 2 of 5 -> INVALID_CREDENTIALS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is INVALID_CREDENTIALS', function () { pm.expect(json.error.code).to.eql('INVALID_CREDENTIALS'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Wrong@2222\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Wrong password attempt 3 of 5 -> INVALID_CREDENTIALS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is INVALID_CREDENTIALS', function () { pm.expect(json.error.code).to.eql('INVALID_CREDENTIALS'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Wrong@3333\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Wrong password attempt 4 of 5 -> INVALID_CREDENTIALS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is INVALID_CREDENTIALS', function () { pm.expect(json.error.code).to.eql('INVALID_CREDENTIALS'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Wrong@4444\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Wrong password attempt 5 of 5 -> INVALID_CREDENTIALS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is INVALID_CREDENTIALS', function () { pm.expect(json.error.code).to.eql('INVALID_CREDENTIALS'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Wrong@5555\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login with the CORRECT password while locked -> ACCOUNT_LOCKED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 423', function () { pm.response.to.have.status(423); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is ACCOUNT_LOCKED', function () { pm.expect(json.error.code).to.eql('ACCOUNT_LOCKED'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Passw0rd@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "The 5th failure set Locked_Until = NOW() + 15 minutes, so even the right password is refused."
+          }
+        }
+      ],
+      "description": "Only the account created in the Registration folder is locked. Run Registration again (new e-mail) to repeat."
+    },
+    {
+      "name": "OTP and two-factor",
+      "item": [
+        {
+          "name": "Request a PAYMENT OTP (passenger)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200, 201]', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('challengeId and expiresAt are returned', function () {",
+                  "    pm.expect(json.data.challengeId).to.be.a('number');",
+                  "    pm.expect(json.data.expiresAt).to.be.a('string');",
+                  "});",
+                  "pm.test('devOtp is present or null (dev-mode only)', function () { pm.expect(json.data).to.have.property('devOtp'); });",
+                  "pm.collectionVariables.set('paymentChallengeId', json.data.challengeId);",
+                  "pm.collectionVariables.set('paymentDevOtp', json.data.devOtp);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/payment-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "payment-otp"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "The stored values can be pasted into POST /payments/orders (G4 collection)."
+          }
+        },
+        {
+          "name": "Request a PAYMENT OTP without a token -> UNAUTHORIZED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is UNAUTHORIZED', function () { pm.expect(json.error.code).to.eql('UNAUTHORIZED'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/payment-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "payment-otp"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Verify OTP with a wrong challenge/OTP -> OTP_INVALID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is OTP_INVALID', function () { pm.expect(json.error.code).to.eql('OTP_INVALID'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challengeId\": 999999999,\n  \"otp\": \"000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Verify OTP with a blank otp -> VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is VALIDATION_ERROR', function () { pm.expect(json.error.code).to.eql('VALIDATION_ERROR'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challengeId\": 1,\n  \"otp\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login OTP step 1: login as Asha",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "// Works in both modes: with require-login-otp=false a token is returned, with true a challenge.",
+                  "pm.collectionVariables.set('loginOtpRequired', String(json.data.otpRequired));",
+                  "if (json.data.otpRequired === true) {",
+                  "    pm.test('challengeId is returned and token is null', function () {",
+                  "        pm.expect(json.data.challengeId).to.be.a('number');",
+                  "        pm.expect(json.data.token).to.eql(null);",
+                  "    });",
+                  "    pm.collectionVariables.set('loginChallengeId', json.data.challengeId);",
+                  "    pm.collectionVariables.set('loginDevOtp', json.data.devOtp);",
+                  "} else {",
+                  "    pm.collectionVariables.set('loginChallengeId', '0');",
+                  "    pm.collectionVariables.set('loginDevOtp', '000000');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"asha@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Only returns a challenge when app.auth.require-login-otp=true (devOtp also needs app.auth.dev-mode=true)."
+          }
+        },
+        {
+          "name": "Login OTP step 2: verify with the devOtp",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('loginOtpRequired') !== 'true') {",
+                  "    pm.test.skip('Login OTP is disabled (app.auth.require-login-otp=false) - nothing to verify');",
+                  "} else {",
+                  "    pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "    const json = pm.response.json();",
+                  "    pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "    pm.test('token and user are returned', function () {",
+                  "        pm.expect(json.data.token).to.be.a('string').and.not.empty;",
+                  "        pm.expect(json.data.user.email).to.eql('asha@railway.test');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challengeId\": {{loginChallengeId}},\n  \"otp\": \"{{loginDevOtp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Skipped automatically when login OTP is switched off."
+          }
+        },
+        {
+          "name": "Login OTP step 3: reuse the same OTP -> OTP_INVALID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('loginOtpRequired') !== 'true') {",
+                  "    pm.test.skip('Login OTP is disabled (app.auth.require-login-otp=false) - nothing to reuse');",
+                  "} else {",
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is OTP_INVALID', function () { pm.expect(json.error.code).to.eql('OTP_INVALID'); });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challengeId\": {{loginChallengeId}},\n  \"otp\": \"{{loginDevOtp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "An OTP is single use (Is_Used = 1 after the first success)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "User profile",
+      "item": [
+        {
+          "name": "Get my profile (passenger)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('profile belongs to asha@railway.test', function () {",
+                  "    pm.expect(json.data.email).to.eql('asha@railway.test');",
+                  "    pm.expect(json.data.fullName).to.eql('Asha Patil');",
+                  "    pm.expect(json.data.phone).to.eql('9000000003');",
+                  "    pm.expect(json.data.roles).to.include('PASSENGER');",
+                  "});",
+                  "pm.test('password hash is never exposed', function () { pm.expect(json.data).to.not.have.property('passwordHash'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get my profile (operator)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('roles contain OPERATOR', function () { pm.expect(json.data.roles).to.include('OPERATOR'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get my profile without a token -> UNAUTHORIZED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is UNAUTHORIZED', function () { pm.expect(json.error.code).to.eql('UNAUTHORIZED'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Update my profile (new account)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('updated values are returned', function () {",
+                  "    pm.expect(json.data.fullName).to.eql('Updated Student');",
+                  "    pm.expect(json.data.phone).to.eql('9876543210');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newUserToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Updated Student\",\n  \"phone\": \"9876543210\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Uses the token of the account created in the Registration folder, so seeded data stays untouched."
+          }
+        },
+        {
+          "name": "Get my profile again - change is persisted",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('profile shows the new name', function () { pm.expect(json.data.fullName).to.eql('Updated Student'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newUserToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update my profile with a blank name -> VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is VALIDATION_ERROR', function () { pm.expect(json.error.code).to.eql('VALIDATION_ERROR'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newUserToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"\",\n  \"phone\": \"9876543210\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Passenger management",
+      "item": [
+        {
+          "name": "List my passengers (Asha)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('at least the 3 seeded passengers are returned', function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    pm.expect(json.data.length).to.be.at.least(3);",
+                  "});",
+                  "pm.test('only own passengers (ids 4-8 belong to other users)', function () {",
+                  "    json.data.forEach(function (p) { pm.expect([4, 5, 6, 7, 8]).to.not.include(p.passengerId); });",
+                  "});",
+                  "pm.test('ageCategory is derived from date of birth', function () {",
+                  "    const senior = json.data.find(function (p) { return p.passengerId === 2; });",
+                  "    const child = json.data.find(function (p) { return p.passengerId === 3; });",
+                  "    pm.expect(senior.ageCategory).to.eql('SENIOR');",
+                  "    pm.expect(child.ageCategory).to.eql('CHILD');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/passengers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "passengers"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create a passenger",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200, 201]', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('passenger object is returned', function () {",
+                  "    pm.expect(json.data.passengerId).to.be.a('number');",
+                  "    pm.expect(json.data.fullName).to.eql('Ravi Patil');",
+                  "});",
+                  "pm.collectionVariables.set('createdPassengerId', json.data.passengerId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/passengers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "passengers"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Ravi Patil\",\n  \"dateOfBirth\": \"1950-06-15\",\n  \"gender\": \"M\",\n  \"concessionType\": \"NONE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List my passengers - new one is SENIOR by age",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('stored concession stays NONE but ageCategory is SENIOR', function () {",
+                  "    const id = Number(pm.collectionVariables.get('createdPassengerId'));",
+                  "    const p = json.data.find(function (x) { return x.passengerId === id; });",
+                  "    pm.expect(p).to.be.an('object');",
+                  "    pm.expect(p.concessionType).to.eql('NONE');",
+                  "    pm.expect(p.ageCategory).to.eql('SENIOR');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/passengers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "passengers"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update my passenger",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('changes are returned', function () {",
+                  "    pm.expect(json.data.fullName).to.eql('Ravi Patil Updated');",
+                  "    pm.expect(json.data.concessionType).to.eql('GOVT');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/passengers/{{createdPassengerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "passengers",
+                "{{createdPassengerId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Ravi Patil Updated\",\n  \"dateOfBirth\": \"1950-06-15\",\n  \"gender\": \"M\",\n  \"concessionType\": \"GOVT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update another user's passenger -> NOT_OWNER",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is NOT_OWNER', function () { pm.expect(json.error.code).to.eql('NOT_OWNER'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/passengers/4",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "passengers",
+                "4"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Hacked Name\",\n  \"dateOfBirth\": \"1988-01-20\",\n  \"gender\": \"M\",\n  \"concessionType\": \"NONE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Passenger 4 (Rohan Deshmukh) belongs to user 4, not to Asha."
+          }
+        },
+        {
+          "name": "Delete another user's passenger -> NOT_OWNER",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is NOT_OWNER', function () { pm.expect(json.error.code).to.eql('NOT_OWNER'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/passengers/5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "passengers",
+                "5"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create a passenger with a future date of birth -> VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is VALIDATION_ERROR', function () { pm.expect(json.error.code).to.eql('VALIDATION_ERROR'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/passengers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "passengers"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Future Baby\",\n  \"dateOfBirth\": \"2099-01-01\",\n  \"gender\": \"F\",\n  \"concessionType\": \"NONE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Rejected by bean validation or, at the latest, by trigger trg_passenger_bi."
+          }
+        },
+        {
+          "name": "Create a passenger with an invalid gender -> VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is VALIDATION_ERROR', function () { pm.expect(json.error.code).to.eql('VALIDATION_ERROR'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/passengers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "passengers"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Bad Gender\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"gender\": \"X\",\n  \"concessionType\": \"NONE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete a passenger that does not exist -> NOT_FOUND",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 404', function () { pm.response.to.have.status(404); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is NOT_FOUND', function () { pm.expect(json.error.code).to.eql('NOT_FOUND'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/passengers/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "passengers",
+                "999999"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete my passenger (not referenced by any booking)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('deleted is true', function () { pm.expect(json.data.deleted).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/passengers/{{createdPassengerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "passengers",
+                "{{createdPassengerId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin user management",
+      "item": [
+        {
+          "name": "List all users (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('v_user_account rows are returned with camelCase keys', function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    pm.expect(json.data.length).to.be.at.least(5);",
+                  "    pm.expect(json.data[0]).to.include.all.keys('userId', 'email', 'fullName', 'phone', 'isActive', 'roles', 'createdAt');",
+                  "});",
+                  "pm.test('admin@railway.test has the ADMIN role', function () {",
+                  "    const a = json.data.find(function (u) { return u.email === 'admin@railway.test'; });",
+                  "    pm.expect(a.roles).to.include('ADMIN');",
+                  "});",
+                  "pm.test('password hash is never exposed', function () { pm.expect(json.data[0]).to.not.have.property('passwordHash'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Replace roles of the new user (PASSENGER + OPERATOR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('both roles are returned', function () {",
+                  "    pm.expect(json.data.userId).to.eql(Number(pm.collectionVariables.get('newUserId')));",
+                  "    pm.expect(json.data.roles).to.have.members(['PASSENGER', 'OPERATOR']);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{newUserId}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{newUserId}}",
+                "roles"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\n    \"PASSENGER\",\n    \"OPERATOR\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Fires trg_user_role_ai / trg_user_role_ad, which write user_role_audit rows."
+          }
+        },
+        {
+          "name": "Replace roles with an empty list -> VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is VALIDATION_ERROR', function () { pm.expect(json.error.code).to.eql('VALIDATION_ERROR'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{newUserId}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{newUserId}}",
+                "roles"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "At least one role is required."
+          }
+        },
+        {
+          "name": "Replace roles of a user that does not exist -> NOT_FOUND",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 404', function () { pm.response.to.have.status(404); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is NOT_FOUND', function () { pm.expect(json.error.code).to.eql('NOT_FOUND'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/999999/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "999999",
+                "roles"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\n    \"PASSENGER\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Restore roles of the new user (PASSENGER only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('only PASSENGER remains', function () { pm.expect(json.data.roles).to.have.members(['PASSENGER']); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{newUserId}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{newUserId}}",
+                "roles"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\n    \"PASSENGER\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Deactivate the new user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('active is false', function () { pm.expect(json.data.active).to.eql(false); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{newUserId}}/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{newUserId}}",
+                "active"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Re-activate the new user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('active is true', function () { pm.expect(json.data.active).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{newUserId}}/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{newUserId}}",
+                "active"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Role-based access control (negative)",
+      "item": [
+        {
+          "name": "Admin endpoint with PASSENGER token -> 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin endpoint with OPERATOR token -> 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin endpoint without a token -> 401 UNAUTHORIZED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 401', function () { pm.response.to.have.status(401); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is UNAUTHORIZED', function () { pm.expect(json.error.code).to.eql('UNAUTHORIZED'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Change roles with PASSENGER token -> 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{newUserId}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{newUserId}}",
+                "roles"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\n    \"ADMIN\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Privilege-escalation attempt: a passenger must never be able to grant ADMIN."
+          }
+        },
+        {
+          "name": "Deactivate a user with PASSENGER token -> 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{newUserId}}/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{newUserId}}",
+                "active"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Change roles with OPERATOR token -> 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 403', function () { pm.response.to.have.status(403); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is FORBIDDEN', function () { pm.expect(json.error.code).to.eql('FORBIDDEN'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{newUserId}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{newUserId}}",
+                "roles"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\n    \"ADMIN\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Passenger deletion rule (needs demo data)",
+      "item": [
+        {
+          "name": "Delete a passenger referenced by a booking -> PASSENGER_IN_USE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is 409', function () { pm.response.to.have.status(409); });",
+                  "const json = pm.response.json();",
+                  "pm.test('success is false', function () { pm.expect(json.success).to.eql(false); });",
+                  "pm.test('error.code is PASSENGER_IN_USE', function () { pm.expect(json.error.code).to.eql('PASSENGER_IN_USE'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/passengers/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "passengers",
+                "1"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "PREREQUISITE: db/60_demo_data.sql must be loaded so that passenger 1 (Asha Patil) appears in a booking. WARNING: without demo data this request really deletes seeded passenger 1 and the test fails with 200."
+          }
+        }
+      ],
+      "description": "Run last. Needs the demo bookings created by db/60_demo_data.sql."
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "passengerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "operatorToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

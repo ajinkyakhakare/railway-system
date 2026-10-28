@@ -1,0 +1,4782 @@
+{
+  "info": {
+    "_postman_id": "891451df-e3c2-44a5-8a1f-8187046de9be",
+    "name": "Railway System - G1 Train, Station & Route",
+    "description": "Group 1 API tests (Postman Collection v2.1.0).\n\nHow to run: start MySQL (database railway_db seeded) and the Spring Boot backend, then run the whole collection with the Collection Runner in the given order. 'Auth setup' must run first because it stores adminToken, passengerToken and operatorToken. Public endpoints are sent without a token on purpose. Variables newStationId, newRouteId, routeStopId, newTrainId, newTrainNo and runId are filled by the test scripts; do not edit them by hand.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Local date variables (yyyy-MM-dd) used by search / run-generation requests.",
+          "function pad(n) { return n < 10 ? '0' + n : String(n); }",
+          "function fmt(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }",
+          "function plusDays(n) { var d = new Date(); d.setDate(d.getDate() + n); return fmt(d); }",
+          "pm.variables.set('today', plusDays(0));",
+          "pm.variables.set('todayPlus6', plusDays(6));",
+          "pm.variables.set('todayPlus14', plusDays(14));",
+          "pm.variables.set('todayPlus90', plusDays(90));",
+          "pm.variables.set('farFuture', '2099-01-01');"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "passengerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "operatorToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newStationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newRouteId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "routeStopId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newTrainId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newTrainNo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth setup",
+      "description": "Run this folder first. It stores the three JWTs used by every other request.",
+      "item": [
+        {
+          "name": "Login as ADMIN (admin@railway.test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"a token is returned (app.auth.require-login-otp must be false)\", function () {",
+                  "    pm.expect(json.data.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test(\"user has role ADMIN\", function () {",
+                  "    pm.expect(json.data.user.roles).to.include(\"ADMIN\");",
+                  "});",
+                  "if (json.data && json.data.token) {",
+                  "    pm.collectionVariables.set(\"adminToken\", json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in and stores data.token in the collection variable adminToken.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login as PASSENGER (asha@railway.test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"a token is returned (app.auth.require-login-otp must be false)\", function () {",
+                  "    pm.expect(json.data.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test(\"user has role PASSENGER\", function () {",
+                  "    pm.expect(json.data.user.roles).to.include(\"PASSENGER\");",
+                  "});",
+                  "if (json.data && json.data.token) {",
+                  "    pm.collectionVariables.set(\"passengerToken\", json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in and stores data.token in the collection variable passengerToken.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"asha@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login as OPERATOR (operator@railway.test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"a token is returned (app.auth.require-login-otp must be false)\", function () {",
+                  "    pm.expect(json.data.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test(\"user has role OPERATOR\", function () {",
+                  "    pm.expect(json.data.user.roles).to.include(\"OPERATOR\");",
+                  "});",
+                  "if (json.data && json.data.token) {",
+                  "    pm.collectionVariables.set(\"operatorToken\", json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in and stores data.token in the collection variable operatorToken.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"operator@railway.test\",\n  \"password\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stations",
+      "description": "Station master data: public list and admin create / update / delete.",
+      "item": [
+        {
+          "name": "List all stations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"at least the 9 seeded stations are returned\", function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    pm.expect(json.data.length).to.be.at.least(9);",
+                  "});",
+                  "pm.test(\"every station has the contract fields\", function () {",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"stationId\", \"stationCode\", \"stationName\", \"city\", \"state\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"seed station 1 is Pune Junction (PUNE)\", function () {",
+                  "    var s = json.data.find(function (x) { return x.stationId === 1; });",
+                  "    pm.expect(s).to.be.an('object');",
+                  "    pm.expect(s.stationCode).to.eql('PUNE');",
+                  "    pm.expect(s.stationName).to.eql('Pune Junction');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stations"
+              ]
+            },
+            "description": "PUBLIC. No token is sent on purpose."
+          },
+          "response": []
+        },
+        {
+          "name": "Create station (ADMIN)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var digits = String(Math.floor(1000 + Math.random() * 9000));",
+                  "pm.variables.set('newStationCode', 'T' + digits);   // Station_Code is VARCHAR(5), unique"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"station is returned with the new code\", function () {",
+                  "    [\"stationId\", \"stationCode\", \"stationName\", \"city\", \"state\"].forEach(function (k) {",
+                  "        pm.expect(json.data).to.have.property(k);",
+                  "    });",
+                  "});",
+                  "pm.test(\"values match the request\", function () {",
+                  "    pm.expect(json.data.stationCode).to.eql(pm.variables.get('newStationCode'));",
+                  "    pm.expect(json.data.stationName).to.eql('Postman Test Station');",
+                  "    pm.expect(json.data.stationId).to.be.a('number');",
+                  "});",
+                  "pm.collectionVariables.set('newStationId', json.data.stationId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stations"
+              ]
+            },
+            "description": "Creates a throw-away station and stores its id in newStationId.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stationCode\": \"{{newStationCode}}\",\n  \"stationName\": \"Postman Test Station\",\n  \"city\": \"Testville\",\n  \"state\": \"Maharashtra\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update station (ADMIN)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var digits = String(Math.floor(1000 + Math.random() * 9000));",
+                  "pm.variables.set('updStationCode', 'U' + digits);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"updated values are returned\", function () {",
+                  "    pm.expect(json.data.stationId).to.eql(Number(pm.collectionVariables.get('newStationId')));",
+                  "    pm.expect(json.data.stationCode).to.eql(pm.variables.get('updStationCode'));",
+                  "    pm.expect(json.data.stationName).to.eql('Postman Test Station Renamed');",
+                  "    pm.expect(json.data.state).to.eql('Goa');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stations/{{newStationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stations",
+                "{{newStationId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stationCode\": \"{{updStationCode}}\",\n  \"stationName\": \"Postman Test Station Renamed\",\n  \"city\": \"Testville\",\n  \"state\": \"Goa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List stations shows the updated station",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"the renamed station is in the list\", function () {",
+                  "    var id = Number(pm.collectionVariables.get('newStationId'));",
+                  "    var s = json.data.find(function (x) { return x.stationId === id; });",
+                  "    pm.expect(s).to.be.an('object');",
+                  "    pm.expect(s.stationName).to.eql('Postman Test Station Renamed');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stations"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Delete station (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"deleted is true\", function () {",
+                  "    pm.expect(json.data.deleted).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stations/{{newStationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stations",
+                "{{newStationId}}"
+              ]
+            },
+            "description": "The throw-away station is not used by any route, so deletion is allowed."
+          },
+          "response": []
+        },
+        {
+          "name": "List stations no longer contains the deleted station",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"deleted station is gone\", function () {",
+                  "    var id = Number(pm.collectionVariables.get('newStationId'));",
+                  "    var s = json.data.find(function (x) { return x.stationId === id; });",
+                  "    pm.expect(s).to.eql(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stations"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - duplicate station code returns 409 DUPLICATE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is DUPLICATE\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"DUPLICATE\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stations"
+              ]
+            },
+            "description": "Station_Code PUNE already exists (UNIQUE).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stationCode\": \"PUNE\",\n  \"stationName\": \"Another Pune\",\n  \"city\": \"Pune\",\n  \"state\": \"Maharashtra\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - PASSENGER creating a station returns 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is FORBIDDEN\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"FORBIDDEN\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stations"
+              ]
+            },
+            "description": "/admin/** needs role ADMIN.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stationCode\": \"ZZZ91\",\n  \"stationName\": \"Forbidden Station\",\n  \"city\": \"Nowhere\",\n  \"state\": \"Nowhere\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - OPERATOR creating a station returns 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is FORBIDDEN\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"FORBIDDEN\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stations"
+              ]
+            },
+            "description": "OPERATOR is not enough for /admin/** endpoints.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stationCode\": \"ZZZ92\",\n  \"stationName\": \"Forbidden Station\",\n  \"city\": \"Nowhere\",\n  \"state\": \"Nowhere\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - no token returns 401 UNAUTHORIZED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is UNAUTHORIZED\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"UNAUTHORIZED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stations"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stationCode\": \"ZZZ93\",\n  \"stationName\": \"Anonymous Station\",\n  \"city\": \"Nowhere\",\n  \"state\": \"Nowhere\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - blank station name returns 400 VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is VALIDATION_ERROR\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stations"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stationCode\": \"ZZZ94\",\n  \"stationName\": \"\",\n  \"city\": \"Nowhere\",\n  \"state\": \"Nowhere\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - update unknown station returns 404 NOT_FOUND",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is NOT_FOUND\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stations/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stations",
+                "999999"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stationCode\": \"ZZZ95\",\n  \"stationName\": \"Ghost\",\n  \"city\": \"Nowhere\",\n  \"state\": \"Nowhere\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - delete station used by a route returns 409 CONSTRAINT_VIOLATION",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is CONSTRAINT_VIOLATION\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"CONSTRAINT_VIOLATION\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stations/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stations",
+                "1"
+              ]
+            },
+            "description": "Station 1 (Pune) is referenced by route_stop and route, so the foreign key blocks the delete."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - delete unknown station returns 404 NOT_FOUND",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is NOT_FOUND\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stations/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stations",
+                "999999"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Routes",
+      "description": "Routes and their ordered stops (public reads, admin create).",
+      "item": [
+        {
+          "name": "List all routes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"at least the 3 seeded routes are returned\", function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    pm.expect(json.data.length).to.be.at.least(3);",
+                  "});",
+                  "pm.test(\"every route has the contract fields\", function () {",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"routeId\", \"routeName\", \"sourceStationId\", \"destStationId\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"route 1 is Mumbai CSMT - Pune Jn (station 2 to station 1)\", function () {",
+                  "    var r = json.data.find(function (x) { return x.routeId === 1; });",
+                  "    pm.expect(r).to.be.an('object');",
+                  "    pm.expect(r.routeName).to.eql('Mumbai CSMT - Pune Jn');",
+                  "    pm.expect(r.sourceStationId).to.eql(2);",
+                  "    pm.expect(r.destStationId).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/routes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "routes"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Stops of route 1 (CSMT - Pune)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"4 stops are returned\", function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    pm.expect(json.data.length).to.eql(4);",
+                  "});",
+                  "pm.test(\"every stop has the contract fields\", function () {",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"routeStopId\", \"stopSeq\", \"stationId\", \"stationCode\", \"stationName\", \"arrivalTime\", \"departureTime\", \"dayOffset\", \"distanceFromSourceKm\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"stops are ordered by stopSeq 1..4\", function () {",
+                  "    var seqs = json.data.map(function (s) { return s.stopSeq; });",
+                  "    pm.expect(seqs).to.eql([1, 2, 3, 4]);",
+                  "});",
+                  "pm.test(\"station codes and cumulative kilometres match the seed\", function () {",
+                  "    var codes = json.data.map(function (s) { return s.stationCode; });",
+                  "    var km = json.data.map(function (s) { return s.distanceFromSourceKm; });",
+                  "    pm.expect(codes).to.eql(['CSMT', 'KYN', 'LNL', 'PUNE']);",
+                  "    pm.expect(km).to.eql([0, 54, 124, 192]);",
+                  "});",
+                  "pm.test(\"first stop has no arrival time and last stop has no departure time\", function () {",
+                  "    pm.expect(json.data[0].arrivalTime).to.eql(null);",
+                  "    pm.expect(json.data[3].departureTime).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/routes/1/stops",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "routes",
+                "1",
+                "stops"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Stops of route 3 (overnight Day_Offset)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"5 stops are returned\", function () {",
+                  "    pm.expect(json.data.length).to.eql(5);",
+                  "});",
+                  "pm.test(\"the last two stops are on the next day (dayOffset 1)\", function () {",
+                  "    var offsets = json.data.map(function (s) { return s.dayOffset; });",
+                  "    pm.expect(offsets).to.eql([0, 0, 0, 1, 1]);",
+                  "});",
+                  "pm.test(\"Bhusawal arrives at 00:45 and Nagpur is 837 km from Mumbai\", function () {",
+                  "    var bsl = json.data[3];",
+                  "    var ngp = json.data[4];",
+                  "    pm.expect(bsl.stationCode).to.eql('BSL');",
+                  "    pm.expect(String(bsl.arrivalTime).indexOf(\"00:45\")).to.eql(0);",
+                  "    pm.expect(ngp.stationCode).to.eql('NGP');",
+                  "    pm.expect(ngp.distanceFromSourceKm).to.eql(837);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/routes/3/stops",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "routes",
+                "3",
+                "stops"
+              ]
+            },
+            "description": "Shows why route_stop has Day_Offset: the train crosses midnight after Nashik."
+          },
+          "response": []
+        },
+        {
+          "name": "Create route with stops (ADMIN)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var digits = String(Math.floor(100000 + Math.random() * 900000));",
+                  "pm.variables.set('newRouteName', 'Postman Test Route ' + digits);   // Route_Name is unique"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"routeId is returned\", function () {",
+                  "    pm.expect(json.data.routeId).to.be.a('number');",
+                  "});",
+                  "pm.collectionVariables.set('newRouteId', json.data.routeId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/routes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "routes"
+              ]
+            },
+            "description": "Pune - Solapur - Hyderabad. Stores the new route id in newRouteId.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"routeName\": \"{{newRouteName}}\",\n  \"sourceStationId\": 1,\n  \"destStationId\": 9,\n  \"stops\": [\n    {\n      \"stationId\": 1,\n      \"stopSeq\": 1,\n      \"arrivalTime\": null,\n      \"departureTime\": \"06:00:00\",\n      \"dayOffset\": 0,\n      \"distanceFromSourceKm\": 0\n    },\n    {\n      \"stationId\": 8,\n      \"stopSeq\": 2,\n      \"arrivalTime\": \"10:15:00\",\n      \"departureTime\": \"10:20:00\",\n      \"dayOffset\": 0,\n      \"distanceFromSourceKm\": 249\n    },\n    {\n      \"stationId\": 9,\n      \"stopSeq\": 3,\n      \"arrivalTime\": \"14:00:00\",\n      \"departureTime\": null,\n      \"dayOffset\": 0,\n      \"distanceFromSourceKm\": 559\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stops of the new route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"3 stops, ordered, with the right stations and distances\", function () {",
+                  "    pm.expect(json.data.length).to.eql(3);",
+                  "    var codes = json.data.map(function (s) { return s.stationCode; });",
+                  "    var km = json.data.map(function (s) { return s.distanceFromSourceKm; });",
+                  "    pm.expect(codes).to.eql(['PUNE', 'SUR', 'HYB']);",
+                  "    pm.expect(km).to.eql([0, 249, 559]);",
+                  "});",
+                  "pm.test(\"stop times were stored\", function () {",
+                  "    pm.expect(String(json.data[0].departureTime).indexOf(\"06:00\")).to.eql(0);",
+                  "    pm.expect(String(json.data[1].arrivalTime).indexOf(\"10:15\")).to.eql(0);",
+                  "    pm.expect(String(json.data[1].departureTime).indexOf(\"10:20\")).to.eql(0);",
+                  "    pm.expect(String(json.data[2].arrivalTime).indexOf(\"14:00\")).to.eql(0);",
+                  "});",
+                  "var second = json.data.find(function (s) { return s.stopSeq === 2; });",
+                  "pm.collectionVariables.set('routeStopId', second.routeStopId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/routes/{{newRouteId}}/stops",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "routes",
+                "{{newRouteId}}",
+                "stops"
+              ]
+            },
+            "description": "Stores the id of the middle stop in routeStopId for the Route stops folder."
+          },
+          "response": []
+        },
+        {
+          "name": "List routes shows the new route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"the new route is listed with source 1 and destination 9\", function () {",
+                  "    var id = Number(pm.collectionVariables.get('newRouteId'));",
+                  "    var r = json.data.find(function (x) { return x.routeId === id; });",
+                  "    pm.expect(r).to.be.an('object');",
+                  "    pm.expect(r.sourceStationId).to.eql(1);",
+                  "    pm.expect(r.destStationId).to.eql(9);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/routes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "routes"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - duplicate route name returns 409 DUPLICATE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is DUPLICATE\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"DUPLICATE\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/routes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "routes"
+              ]
+            },
+            "description": "Route_Name is UNIQUE and this name is seeded.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"routeName\": \"Mumbai CSMT - Pune Jn\",\n  \"sourceStationId\": 1,\n  \"destStationId\": 8,\n  \"stops\": [\n    {\n      \"stationId\": 1,\n      \"stopSeq\": 1,\n      \"arrivalTime\": null,\n      \"departureTime\": \"06:00:00\",\n      \"dayOffset\": 0,\n      \"distanceFromSourceKm\": 0\n    },\n    {\n      \"stationId\": 8,\n      \"stopSeq\": 2,\n      \"arrivalTime\": \"10:15:00\",\n      \"departureTime\": null,\n      \"dayOffset\": 0,\n      \"distanceFromSourceKm\": 249\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - blank route name returns 400 VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is VALIDATION_ERROR\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/routes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "routes"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"routeName\": \"\",\n  \"sourceStationId\": 1,\n  \"destStationId\": 8,\n  \"stops\": [\n    {\n      \"stationId\": 1,\n      \"stopSeq\": 1,\n      \"arrivalTime\": null,\n      \"departureTime\": \"06:00:00\",\n      \"dayOffset\": 0,\n      \"distanceFromSourceKm\": 0\n    },\n    {\n      \"stationId\": 8,\n      \"stopSeq\": 2,\n      \"arrivalTime\": \"10:15:00\",\n      \"departureTime\": null,\n      \"dayOffset\": 0,\n      \"distanceFromSourceKm\": 249\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - same source and destination is rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 400 or 409\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 409]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is one of VALIDATION_ERROR, CONSTRAINT_VIOLATION\", function () {",
+                  "    pm.expect([\"VALIDATION_ERROR\", \"CONSTRAINT_VIOLATION\"]).to.include(json.error.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/routes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "routes"
+              ]
+            },
+            "description": "CHECK(Source_Station_ID <> Dest_Station_ID). Rejected by validation (400) or by the database CHECK (409).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"routeName\": \"Postman Loop Route\",\n  \"sourceStationId\": 1,\n  \"destStationId\": 1,\n  \"stops\": [\n    {\n      \"stationId\": 1,\n      \"stopSeq\": 1,\n      \"arrivalTime\": null,\n      \"departureTime\": \"06:00:00\",\n      \"dayOffset\": 0,\n      \"distanceFromSourceKm\": 0\n    },\n    {\n      \"stationId\": 8,\n      \"stopSeq\": 2,\n      \"arrivalTime\": \"10:15:00\",\n      \"departureTime\": null,\n      \"dayOffset\": 0,\n      \"distanceFromSourceKm\": 249\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - PASSENGER creating a route returns 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is FORBIDDEN\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"FORBIDDEN\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/routes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "routes"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"routeName\": \"Forbidden Route\",\n  \"sourceStationId\": 1,\n  \"destStationId\": 8,\n  \"stops\": [\n    {\n      \"stationId\": 1,\n      \"stopSeq\": 1,\n      \"arrivalTime\": null,\n      \"departureTime\": \"06:00:00\",\n      \"dayOffset\": 0,\n      \"distanceFromSourceKm\": 0\n    },\n    {\n      \"stationId\": 8,\n      \"stopSeq\": 2,\n      \"arrivalTime\": \"10:15:00\",\n      \"departureTime\": null,\n      \"dayOffset\": 0,\n      \"distanceFromSourceKm\": 249\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Route stops",
+      "description": "Editing stop times. Every real change is copied to route_stop_audit by a trigger.",
+      "item": [
+        {
+          "name": "Update stop times (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"the updated stop is returned\", function () {",
+                  "    pm.expect(json.data.routeStopId).to.eql(Number(pm.collectionVariables.get('routeStopId')));",
+                  "    pm.expect(String(json.data.arrivalTime).indexOf(\"10:20\")).to.eql(0);",
+                  "    pm.expect(String(json.data.departureTime).indexOf(\"10:25\")).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/route-stops/{{routeStopId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "route-stops",
+                "{{routeStopId}}"
+              ]
+            },
+            "description": "Only the throw-away route is changed. trg_route_stop_audit writes a route_stop_audit row.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"arrivalTime\": \"10:20:00\",\n  \"departureTime\": \"10:25:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Updated times are visible in the stop list",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"stop 2 now arrives 10:20 and departs 10:25\", function () {",
+                  "    var second = json.data.find(function (s) { return s.stopSeq === 2; });",
+                  "    pm.expect(String(second.arrivalTime).indexOf(\"10:20\")).to.eql(0);",
+                  "    pm.expect(String(second.departureTime).indexOf(\"10:25\")).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/routes/{{newRouteId}}/stops",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "routes",
+                "{{newRouteId}}",
+                "stops"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - update unknown stop returns 404 NOT_FOUND",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is NOT_FOUND\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/route-stops/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "route-stops",
+                "999999"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"arrivalTime\": \"10:20:00\",\n  \"departureTime\": \"10:25:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - PASSENGER updating a stop returns 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is FORBIDDEN\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"FORBIDDEN\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/route-stops/{{routeStopId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "route-stops",
+                "{{routeStopId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"arrivalTime\": \"11:00:00\",\n  \"departureTime\": \"11:05:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Coach types",
+      "description": "Coach classes (SL, 3A, 2A, 1A, CC) and seats per coach.",
+      "item": [
+        {
+          "name": "List coach types",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"5 coach types with contract fields\", function () {",
+                  "    pm.expect(json.data.length).to.be.at.least(5);",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"coachTypeId\", \"classCode\", \"className\", \"seatsPerCoach\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"seats per coach match the seed\", function () {",
+                  "    var seats = {};",
+                  "    json.data.forEach(function (c) { seats[c.classCode] = c.seatsPerCoach; });",
+                  "    pm.expect(seats.SL).to.eql(72);",
+                  "    pm.expect(seats['3A']).to.eql(64);",
+                  "    pm.expect(seats['2A']).to.eql(48);",
+                  "    pm.expect(seats['1A']).to.eql(24);",
+                  "    pm.expect(seats.CC).to.eql(78);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/coach-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "coach-types"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Trains",
+      "description": "Train master data: public list / search / detail and admin create / update.",
+      "item": [
+        {
+          "name": "List all trains",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"at least the 4 seeded trains are returned\", function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    pm.expect(json.data.length).to.be.at.least(4);",
+                  "});",
+                  "pm.test(\"every train has the contract fields\", function () {",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"trainId\", \"trainNo\", \"trainName\", \"trainType\", \"routeId\", \"routeName\", \"isActive\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"train 11001 is Mumbai Pune Express on route 1\", function () {",
+                  "    var t = json.data.find(function (x) { return x.trainNo === '11001'; });",
+                  "    pm.expect(t).to.be.an('object');",
+                  "    pm.expect(t.trainId).to.eql(1);",
+                  "    pm.expect(t.trainName).to.eql('Mumbai Pune Express');",
+                  "    pm.expect(t.trainType).to.eql('EXPRESS');",
+                  "    pm.expect(t.routeId).to.eql(1);",
+                  "    pm.expect(t.routeName).to.eql('Mumbai CSMT - Pune Jn');",
+                  "    pm.expect([true, 1]).to.include(t.isActive);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Search trains by name (q=Pune)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"both Pune trains match and Vidarbha Express does not\", function () {",
+                  "    var nos = json.data.map(function (t) { return t.trainNo; });",
+                  "    pm.expect(nos).to.include('11001');",
+                  "    pm.expect(nos).to.include('12002');",
+                  "    pm.expect(nos).to.not.include('12401');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains?q=Pune",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Pune"
+                }
+              ]
+            },
+            "description": "?q= matches train name or number."
+          },
+          "response": []
+        },
+        {
+          "name": "Search trains by number (q=12301)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"exactly one train: Deccan Odyssey SF\", function () {",
+                  "    pm.expect(json.data.length).to.eql(1);",
+                  "    pm.expect(json.data[0].trainName).to.eql('Deccan Odyssey SF');",
+                  "    pm.expect(json.data[0].trainType).to.eql('SUPERFAST');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains?q=12301",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "12301"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Search trains with no match (q=zzzzzz)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"empty list\", function () {",
+                  "    pm.expect(json.data).to.eql([]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains?q=zzzzzz",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "zzzzzz"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get train 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"train 1 is Mumbai Pune Express\", function () {",
+                  "    [\"trainId\", \"trainNo\", \"trainName\", \"trainType\", \"routeId\", \"routeName\", \"isActive\"].forEach(function (k) {",
+                  "        pm.expect(json.data).to.have.property(k);",
+                  "    });",
+                  "});",
+                  "pm.test(\"values match the seed\", function () {",
+                  "    pm.expect(json.data.trainId).to.eql(1);",
+                  "    pm.expect(json.data.trainNo).to.eql('11001');",
+                  "    pm.expect(json.data.trainName).to.eql('Mumbai Pune Express');",
+                  "    pm.expect(json.data.routeId).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "1"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create train (ADMIN)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var digits = String(Math.floor(1000 + Math.random() * 9000));",
+                  "pm.collectionVariables.set('newTrainNo', '9' + digits);   // Train_No is CHAR(5), digits only, unique"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"trainId is returned\", function () {",
+                  "    pm.expect(json.data.trainId).to.be.a('number');",
+                  "});",
+                  "pm.collectionVariables.set('newTrainId', json.data.trainId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains"
+              ]
+            },
+            "description": "Creates a test train on route 1 and stores newTrainId and newTrainNo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainNo\": \"{{newTrainNo}}\",\n  \"trainName\": \"Postman Test Express\",\n  \"trainType\": \"EXPRESS\",\n  \"routeId\": 1,\n  \"runDays\": [\n    1,\n    2,\n    3,\n    4,\n    5,\n    6,\n    7\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get the new train",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"the new train is stored with the generated number\", function () {",
+                  "    pm.expect(json.data.trainId).to.eql(Number(pm.collectionVariables.get('newTrainId')));",
+                  "    pm.expect(json.data.trainNo).to.eql(pm.collectionVariables.get('newTrainNo'));",
+                  "    pm.expect(json.data.trainName).to.eql('Postman Test Express');",
+                  "    pm.expect(json.data.trainType).to.eql('EXPRESS');",
+                  "    pm.expect([true, 1]).to.include(json.data.isActive);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/{{newTrainId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "{{newTrainId}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Update the new train (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"updated train row is returned\", function () {",
+                  "    pm.expect(json.data.trainName).to.eql('Postman Test Express Updated');",
+                  "    pm.expect(json.data.trainType).to.eql('SUPERFAST');",
+                  "    pm.expect(json.data.routeId).to.eql(1);",
+                  "    pm.expect([true, 1]).to.include(json.data.isActive);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/{{newTrainId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "{{newTrainId}}"
+              ]
+            },
+            "description": "Also changes the running days to Monday-Friday (used by the Train runs folder).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainName\": \"Postman Test Express Updated\",\n  \"trainType\": \"SUPERFAST\",\n  \"routeId\": 1,\n  \"isActive\": true,\n  \"runDays\": [\n    1,\n    2,\n    3,\n    4,\n    5\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - duplicate train number returns 409 DUPLICATE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is DUPLICATE\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"DUPLICATE\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains"
+              ]
+            },
+            "description": "Train_No 11001 already exists (UNIQUE).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainNo\": \"11001\",\n  \"trainName\": \"Copy Of Mumbai Pune Express\",\n  \"trainType\": \"EXPRESS\",\n  \"routeId\": 1,\n  \"runDays\": [\n    1,\n    2,\n    3\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - invalid train number is rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 400 or 409\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 409]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is one of VALIDATION_ERROR, CONSTRAINT_VIOLATION\", function () {",
+                  "    pm.expect([\"VALIDATION_ERROR\", \"CONSTRAINT_VIOLATION\"]).to.include(json.error.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains"
+              ]
+            },
+            "description": "Train_No must be exactly 5 digits (validation 400 or CHECK constraint 409).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainNo\": \"ABC12\",\n  \"trainName\": \"Bad Number Express\",\n  \"trainType\": \"EXPRESS\",\n  \"routeId\": 1,\n  \"runDays\": [\n    1\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - PASSENGER creating a train returns 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is FORBIDDEN\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"FORBIDDEN\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainNo\": \"90001\",\n  \"trainName\": \"Forbidden Express\",\n  \"trainType\": \"EXPRESS\",\n  \"routeId\": 1,\n  \"runDays\": [\n    1\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - OPERATOR creating a train returns 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is FORBIDDEN\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"FORBIDDEN\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operatorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainNo\": \"90002\",\n  \"trainName\": \"Forbidden Express\",\n  \"trainType\": \"EXPRESS\",\n  \"routeId\": 1,\n  \"runDays\": [\n    1\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - get unknown train returns 404 NOT_FOUND",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is NOT_FOUND\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "999999"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - update unknown train returns 404 NOT_FOUND",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is NOT_FOUND\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "999999"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainName\": \"Ghost Train\",\n  \"trainType\": \"EXPRESS\",\n  \"routeId\": 1,\n  \"isActive\": true,\n  \"runDays\": [\n    1\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Train timetable",
+      "description": "Read-only timetable from the view v_train_timetable.",
+      "item": [
+        {
+          "name": "Timetable of train 1 (v_train_timetable)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"4 rows with the view columns\", function () {",
+                  "    pm.expect(json.data.length).to.eql(4);",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"trainId\", \"trainNo\", \"trainName\", \"routeId\", \"stopSeq\", \"stationId\", \"stationCode\", \"stationName\", \"arrivalTime\", \"departureTime\", \"dayOffset\", \"distanceFromSourceKm\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"rows belong to train 11001 and follow the route\", function () {",
+                  "    var rows = json.data.slice().sort(function (a, b) { return a.stopSeq - b.stopSeq; });",
+                  "    var codes = rows.map(function (r) { return r.stationCode; });",
+                  "    pm.expect(codes).to.eql(['CSMT', 'KYN', 'LNL', 'PUNE']);",
+                  "    pm.expect(rows[0].trainNo).to.eql('11001');",
+                  "    pm.expect(String(rows[0].departureTime).indexOf(\"06:00\")).to.eql(0);",
+                  "    pm.expect(String(rows[3].arrivalTime).indexOf(\"10:10\")).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/1/timetable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "1",
+                "timetable"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Timetable of train 4 (overnight, Day_Offset)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"5 rows and the last stop is Nagpur on day offset 1\", function () {",
+                  "    pm.expect(json.data.length).to.eql(5);",
+                  "    var rows = json.data.slice().sort(function (a, b) { return a.stopSeq - b.stopSeq; });",
+                  "    var last = rows[rows.length - 1];",
+                  "    pm.expect(last.stationCode).to.eql('NGP');",
+                  "    pm.expect(last.dayOffset).to.eql(1);",
+                  "    pm.expect(last.distanceFromSourceKm).to.eql(837);",
+                  "    pm.expect(String(last.arrivalTime).indexOf(\"07:30\")).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/4/timetable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "4",
+                "timetable"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Train coaches",
+      "description": "Coach lists and seat generation (sp_add_coaches_generate_seats).",
+      "item": [
+        {
+          "name": "Coaches of train 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"4 coaches with the contract fields\", function () {",
+                  "    pm.expect(json.data.length).to.eql(4);",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"coachId\", \"coachNumber\", \"classCode\", \"className\", \"seatCount\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"SL x2, 3A x1, CC x1 and 286 seats in total\", function () {",
+                  "    var count = {};",
+                  "    var seats = 0;",
+                  "    json.data.forEach(function (c) {",
+                  "        count[c.classCode] = (count[c.classCode] || 0) + 1;",
+                  "        seats += c.seatCount;",
+                  "    });",
+                  "    pm.expect(count.SL).to.eql(2);",
+                  "    pm.expect(count['3A']).to.eql(1);",
+                  "    pm.expect(count.CC).to.eql(1);",
+                  "    pm.expect(seats).to.eql(286);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/1/coaches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "1",
+                "coaches"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Coaches of train 4",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"7 coaches: SL x3, 3A x2, 2A x1, 1A x1 and 416 seats\", function () {",
+                  "    pm.expect(json.data.length).to.eql(7);",
+                  "    var count = {};",
+                  "    var seats = 0;",
+                  "    json.data.forEach(function (c) {",
+                  "        count[c.classCode] = (count[c.classCode] || 0) + 1;",
+                  "        seats += c.seatCount;",
+                  "    });",
+                  "    pm.expect(count.SL).to.eql(3);",
+                  "    pm.expect(count['3A']).to.eql(2);",
+                  "    pm.expect(count['2A']).to.eql(1);",
+                  "    pm.expect(count['1A']).to.eql(1);",
+                  "    pm.expect(seats).to.eql(416);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/4/coaches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "4",
+                "coaches"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Add two 3A coaches to the new train (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"2 coaches and 128 seats (2 x 64) were generated\", function () {",
+                  "    pm.expect(json.data.coachesAdded).to.eql(2);",
+                  "    pm.expect(json.data.seatsAdded).to.eql(128);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/{{newTrainId}}/coaches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "{{newTrainId}}",
+                "coaches"
+              ]
+            },
+            "description": "coachTypeId 2 = 3A (64 seats per coach). Calls sp_add_coaches_generate_seats.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coachTypeId\": 2,\n  \"coachCount\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add one SL coach to the new train (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"1 coach and 72 seats were generated\", function () {",
+                  "    pm.expect(json.data.coachesAdded).to.eql(1);",
+                  "    pm.expect(json.data.seatsAdded).to.eql(72);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/{{newTrainId}}/coaches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "{{newTrainId}}",
+                "coaches"
+              ]
+            },
+            "description": "coachTypeId 1 = SL (72 seats per coach).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coachTypeId\": 1,\n  \"coachCount\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Coaches of the new train",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"coaches B1, B2 (3A) and S1 (SL) exist with the right seat counts\", function () {",
+                  "    pm.expect(json.data.length).to.eql(3);",
+                  "    var byNo = {};",
+                  "    json.data.forEach(function (c) { byNo[c.coachNumber] = c; });",
+                  "    pm.expect(byNo.B1.classCode).to.eql('3A');",
+                  "    pm.expect(byNo.B2.classCode).to.eql('3A');",
+                  "    pm.expect(byNo.S1.classCode).to.eql('SL');",
+                  "    pm.expect(byNo.B1.seatCount).to.eql(64);",
+                  "    pm.expect(byNo.S1.seatCount).to.eql(72);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/{{newTrainId}}/coaches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "{{newTrainId}}",
+                "coaches"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - add coaches to unknown train returns 404 NOT_FOUND",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is NOT_FOUND\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/999999/coaches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "999999",
+                "coaches"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coachTypeId\": 2,\n  \"coachCount\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - add coaches with unknown coach type returns 404 NOT_FOUND",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is NOT_FOUND\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/{{newTrainId}}/coaches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "{{newTrainId}}",
+                "coaches"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coachTypeId\": 999,\n  \"coachCount\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - PASSENGER adding coaches returns 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is FORBIDDEN\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"FORBIDDEN\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/{{newTrainId}}/coaches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "{{newTrainId}}",
+                "coaches"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coachTypeId\": 2,\n  \"coachCount\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Train runs",
+      "description": "train_run rows: one dated journey of a train. Generation is re-runnable.",
+      "item": [
+        {
+          "name": "Generate runs for train 1 (11001) (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"runsCreated is a number between 0 and 15 (re-runnable: 0 if runs already exist)\", function () {",
+                  "    pm.expect(json.data.runsCreated).to.be.a('number');",
+                  "    pm.expect(json.data.runsCreated).to.be.within(0, 15);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/1/runs/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "1",
+                "runs",
+                "generate"
+              ]
+            },
+            "description": "Makes sure the seeded train has runs from today to today+14 days.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"{{today}}\",\n  \"toDate\": \"{{todayPlus14}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate runs for train 3 (12301) (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"runsCreated is a number between 0 and 15 (re-runnable: 0 if runs already exist)\", function () {",
+                  "    pm.expect(json.data.runsCreated).to.be.a('number');",
+                  "    pm.expect(json.data.runsCreated).to.be.within(0, 15);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/3/runs/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "3",
+                "runs",
+                "generate"
+              ]
+            },
+            "description": "Makes sure the seeded train has runs from today to today+14 days.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"{{today}}\",\n  \"toDate\": \"{{todayPlus14}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate runs for train 4 (12401) (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"runsCreated is a number between 0 and 15 (re-runnable: 0 if runs already exist)\", function () {",
+                  "    pm.expect(json.data.runsCreated).to.be.a('number');",
+                  "    pm.expect(json.data.runsCreated).to.be.within(0, 15);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/4/runs/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "4",
+                "runs",
+                "generate"
+              ]
+            },
+            "description": "Makes sure the seeded train has runs from today to today+14 days.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"{{today}}\",\n  \"toDate\": \"{{todayPlus14}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate runs for the new train (Mon-Fri only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"7 consecutive days contain exactly 5 weekdays, so 5 runs are created\", function () {",
+                  "    pm.expect(json.data.runsCreated).to.eql(5);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/{{newTrainId}}/runs/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "{{newTrainId}}",
+                "runs",
+                "generate"
+              ]
+            },
+            "description": "The new train runs Monday-Friday (set by the PUT in the Trains folder).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"{{today}}\",\n  \"toDate\": \"{{todayPlus6}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate the same runs again (re-runnable, 0 new)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"no duplicate runs are created\", function () {",
+                  "    pm.expect(json.data.runsCreated).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/{{newTrainId}}/runs/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "{{newTrainId}}",
+                "runs",
+                "generate"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"{{today}}\",\n  \"toDate\": \"{{todayPlus6}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List runs of train 1 for the next 14 days",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"runs are inside the requested date range\", function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    pm.expect(json.data.length).to.be.at.least(1);",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"runId\", \"journeyDate\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"every journeyDate is between today and today+14\", function () {",
+                  "    var from = pm.variables.get('today');",
+                  "    var to = pm.variables.get('todayPlus14');",
+                  "    json.data.forEach(function (r) {",
+                  "        pm.expect(r.journeyDate >= from && r.journeyDate <= to).to.eql(true);",
+                  "    });",
+                  "});",
+                  "pm.collectionVariables.set('runId', json.data[0].runId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/1/runs?from={{today}}&to={{todayPlus14}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "1",
+                "runs"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{today}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{todayPlus14}}"
+                }
+              ]
+            },
+            "description": "Stores the first run id in runId."
+          },
+          "response": []
+        },
+        {
+          "name": "List runs of the new train (weekdays only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"5 runs and none on Saturday or Sunday\", function () {",
+                  "    pm.expect(json.data.length).to.eql(5);",
+                  "    json.data.forEach(function (r) {",
+                  "        var day = new Date(r.journeyDate + 'T00:00:00').getDay();   // 0 = Sunday, 6 = Saturday",
+                  "        pm.expect(day).to.not.eql(0);",
+                  "        pm.expect(day).to.not.eql(6);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/{{newTrainId}}/runs?from={{today}}&to={{todayPlus6}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "{{newTrainId}}",
+                "runs"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{today}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{todayPlus6}}"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get run by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"run details come from train_run joined with train\", function () {",
+                  "    [\"runId\", \"trainId\", \"trainNo\", \"trainName\", \"journeyDate\", \"routeId\"].forEach(function (k) {",
+                  "        pm.expect(json.data).to.have.property(k);",
+                  "    });",
+                  "});",
+                  "pm.test(\"it is a run of train 11001\", function () {",
+                  "    pm.expect(json.data.runId).to.eql(Number(pm.collectionVariables.get('runId')));",
+                  "    pm.expect(json.data.trainId).to.eql(1);",
+                  "    pm.expect(json.data.trainNo).to.eql('11001');",
+                  "    pm.expect(json.data.trainName).to.eql('Mumbai Pune Express');",
+                  "    pm.expect(json.data.routeId).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/runs/{{runId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "runs",
+                "{{runId}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - toDate before fromDate returns 400 VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is VALIDATION_ERROR\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/1/runs/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "1",
+                "runs",
+                "generate"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"{{todayPlus6}}\",\n  \"toDate\": \"{{today}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - range longer than 60 days returns 400 VALIDATION_ERROR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is VALIDATION_ERROR\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/1/runs/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "1",
+                "runs",
+                "generate"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"{{today}}\",\n  \"toDate\": \"{{todayPlus90}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - generate runs for unknown train returns 404 NOT_FOUND",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is NOT_FOUND\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/999999/runs/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "999999",
+                "runs",
+                "generate"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"{{today}}\",\n  \"toDate\": \"{{todayPlus6}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - PASSENGER generating runs returns 403 FORBIDDEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is FORBIDDEN\", function () {",
+                  "    pm.expect(json.error.code).to.eql(\"FORBIDDEN\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{passengerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/1/runs/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "1",
+                "runs",
+                "generate"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"{{today}}\",\n  \"toDate\": \"{{todayPlus6}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - get unknown run returns 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is one of NOT_FOUND, RUN_NOT_FOUND\", function () {",
+                  "    pm.expect([\"NOT_FOUND\", \"RUN_NOT_FOUND\"]).to.include(json.error.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/runs/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "runs",
+                "999999"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Train search",
+      "description": "Public train search: v_train_stop_pairs joined to train_run, duration from fn_journey_duration_min.",
+      "item": [
+        {
+          "name": "Search CSMT to Pune (same-day train)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"every result has the contract fields\", function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"runId\", \"trainId\", \"trainNo\", \"trainName\", \"trainType\", \"fromStationId\", \"toStationId\", \"journeyDate\", \"departureTime\", \"arrivalTime\", \"durationMin\", \"distanceKm\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"train 11001 is found with the expected timing and distance\", function () {",
+                  "    var t = json.data.find(function (x) { return x.trainNo === \"11001\"; });",
+                  "    pm.expect(t).to.be.an('object');",
+                  "    pm.expect(t.fromStationId).to.eql(2);",
+                  "    pm.expect(t.toStationId).to.eql(1);",
+                  "    pm.expect(t.journeyDate).to.eql(pm.variables.get('today'));",
+                  "    pm.expect(String(t.departureTime).indexOf(\"06:00\")).to.eql(0);",
+                  "    pm.expect(String(t.arrivalTime).indexOf(\"10:10\")).to.eql(0);",
+                  "    pm.expect(t.durationMin).to.eql(250);",
+                  "    pm.expect(t.distanceKm).to.eql(192);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/search?fromStationId=2&toStationId=1&date={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "fromStationId",
+                  "value": "2"
+                },
+                {
+                  "key": "toStationId",
+                  "value": "1"
+                },
+                {
+                  "key": "date",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "06:00 to 10:10 = 250 minutes, 192 km."
+          },
+          "response": []
+        },
+        {
+          "name": "Search Lonavala to Pune (intermediate stop)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"every result has the contract fields\", function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"runId\", \"trainId\", \"trainNo\", \"trainName\", \"trainType\", \"fromStationId\", \"toStationId\", \"journeyDate\", \"departureTime\", \"arrivalTime\", \"durationMin\", \"distanceKm\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"train 11001 is found with the expected timing and distance\", function () {",
+                  "    var t = json.data.find(function (x) { return x.trainNo === \"11001\"; });",
+                  "    pm.expect(t).to.be.an('object');",
+                  "    pm.expect(t.fromStationId).to.eql(4);",
+                  "    pm.expect(t.toStationId).to.eql(1);",
+                  "    pm.expect(t.journeyDate).to.eql(pm.variables.get('today'));",
+                  "    pm.expect(String(t.departureTime).indexOf(\"08:27\")).to.eql(0);",
+                  "    pm.expect(String(t.arrivalTime).indexOf(\"10:10\")).to.eql(0);",
+                  "    pm.expect(t.durationMin).to.eql(103);",
+                  "    pm.expect(t.distanceKm).to.eql(68);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/search?fromStationId=4&toStationId=1&date={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "fromStationId",
+                  "value": "4"
+                },
+                {
+                  "key": "toStationId",
+                  "value": "1"
+                },
+                {
+                  "key": "date",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "Boarding at a middle stop: 08:27 to 10:10 = 103 minutes, 192 - 124 = 68 km."
+          },
+          "response": []
+        },
+        {
+          "name": "Search Pune to Hyderabad (arrives next day)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"every result has the contract fields\", function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"runId\", \"trainId\", \"trainNo\", \"trainName\", \"trainType\", \"fromStationId\", \"toStationId\", \"journeyDate\", \"departureTime\", \"arrivalTime\", \"durationMin\", \"distanceKm\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"train 12301 is found with the expected timing and distance\", function () {",
+                  "    var t = json.data.find(function (x) { return x.trainNo === \"12301\"; });",
+                  "    pm.expect(t).to.be.an('object');",
+                  "    pm.expect(t.fromStationId).to.eql(1);",
+                  "    pm.expect(t.toStationId).to.eql(9);",
+                  "    pm.expect(t.journeyDate).to.eql(pm.variables.get('today'));",
+                  "    pm.expect(String(t.departureTime).indexOf(\"17:30\")).to.eql(0);",
+                  "    pm.expect(String(t.arrivalTime).indexOf(\"05:30\")).to.eql(0);",
+                  "    pm.expect(t.durationMin).to.eql(720);",
+                  "    pm.expect(t.distanceKm).to.eql(559);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/search?fromStationId=1&toStationId=9&date={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "fromStationId",
+                  "value": "1"
+                },
+                {
+                  "key": "toStationId",
+                  "value": "9"
+                },
+                {
+                  "key": "date",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "Day_Offset 1 at Hyderabad: 17:30 to 05:30 next day = 720 minutes."
+          },
+          "response": []
+        },
+        {
+          "name": "Search CSMT to Nagpur (overnight)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"every result has the contract fields\", function () {",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    json.data.forEach(function (row) {",
+                  "        [\"runId\", \"trainId\", \"trainNo\", \"trainName\", \"trainType\", \"fromStationId\", \"toStationId\", \"journeyDate\", \"departureTime\", \"arrivalTime\", \"durationMin\", \"distanceKm\"].forEach(function (k) {",
+                  "            pm.expect(row).to.have.property(k);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "pm.test(\"train 12401 is found with the expected timing and distance\", function () {",
+                  "    var t = json.data.find(function (x) { return x.trainNo === \"12401\"; });",
+                  "    pm.expect(t).to.be.an('object');",
+                  "    pm.expect(t.fromStationId).to.eql(2);",
+                  "    pm.expect(t.toStationId).to.eql(7);",
+                  "    pm.expect(t.journeyDate).to.eql(pm.variables.get('today'));",
+                  "    pm.expect(String(t.departureTime).indexOf(\"18:00\")).to.eql(0);",
+                  "    pm.expect(String(t.arrivalTime).indexOf(\"07:30\")).to.eql(0);",
+                  "    pm.expect(t.durationMin).to.eql(810);",
+                  "    pm.expect(t.distanceKm).to.eql(837);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/search?fromStationId=2&toStationId=7&date={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "fromStationId",
+                  "value": "2"
+                },
+                {
+                  "key": "toStationId",
+                  "value": "7"
+                },
+                {
+                  "key": "date",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "18:00 to 07:30 next day = 810 minutes, 837 km."
+          },
+          "response": []
+        },
+        {
+          "name": "Search in the wrong direction returns an empty list",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"Pune to CSMT has no train in this seed\", function () {",
+                  "    pm.expect(json.data).to.eql([]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/search?fromStationId=1&toStationId=2&date={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "fromStationId",
+                  "value": "1"
+                },
+                {
+                  "key": "toStationId",
+                  "value": "2"
+                },
+                {
+                  "key": "date",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "v_train_stop_pairs only joins stops with From.Stop_Seq < To.Stop_Seq on the same route."
+          },
+          "response": []
+        },
+        {
+          "name": "Search on a date without runs returns an empty list",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"no runs in year 2099\", function () {",
+                  "    pm.expect(json.data).to.eql([]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/search?fromStationId=2&toStationId=1&date={{farFuture}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "fromStationId",
+                  "value": "2"
+                },
+                {
+                  "key": "toStationId",
+                  "value": "1"
+                },
+                {
+                  "key": "date",
+                  "value": "{{farFuture}}"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "NEG - same from and to station returns 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is false\", function () {",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});",
+                  "pm.test(\"error.code is one of VALIDATION_ERROR, INVALID_STATIONS\", function () {",
+                  "    pm.expect([\"VALIDATION_ERROR\", \"INVALID_STATIONS\"]).to.include(json.error.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trains/search?fromStationId=1&toStationId=1&date={{today}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trains",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "fromStationId",
+                  "value": "1"
+                },
+                {
+                  "key": "toStationId",
+                  "value": "1"
+                },
+                {
+                  "key": "date",
+                  "value": "{{today}}"
+                }
+              ]
+            },
+            "description": "A journey from a station to itself is invalid. The contract does not name the code, so both 400 codes are accepted."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Trains cleanup",
+      "description": "Switches the test train off so repeated runs do not pollute search results.",
+      "item": [
+        {
+          "name": "Deactivate the test train (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"success is true\", function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "pm.test(\"isActive is now false (train disappears from search)\", function () {",
+                  "    pm.expect([false, 0]).to.include(json.data.isActive);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/trains/{{newTrainId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "trains",
+                "{{newTrainId}}"
+              ]
+            },
+            "description": "There is no delete endpoint for trains, so the test train is switched off.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainName\": \"Postman Test Express Updated\",\n  \"trainType\": \"SUPERFAST\",\n  \"routeId\": 1,\n  \"isActive\": false,\n  \"runDays\": [\n    1,\n    2,\n    3,\n    4,\n    5\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
