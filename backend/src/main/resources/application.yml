@@ -1,6 +1,6 @@
 # F1 | owner: Foundation | purpose: all configuration keys of contract C2 (other tasks only READ them with @Value)
 server:
-  port: 8080
+  port: 8081
 
 spring:
   datasource:

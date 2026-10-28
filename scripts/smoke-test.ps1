@@ -5,13 +5,13 @@
 # app.payment.mode=MOCK).
 #
 # Usage:   .\scripts\smoke-test.ps1
-#          .\scripts\smoke-test.ps1 -BaseUrl http://localhost:8080/api/v1
+#          .\scripts\smoke-test.ps1 -BaseUrl http://localhost:8081/api/v1
 #
 # Every step prints PASS or FAIL. The script stops with exit code 1 at the first failure and
 # prints "ALL PASS" (exit code 0) when every step succeeds.
 
 param(
-    [string]$BaseUrl = "http://localhost:8080/api/v1"
+    [string]$BaseUrl = "http://localhost:8081/api/v1"
 )
 
 $ErrorActionPreference = "Stop"
